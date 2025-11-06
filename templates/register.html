@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Register</h1>
+{% if message %}
+  <p>{{ message }}</p>
+{% endif %}
+<p>Please fill in the form below to create an account.</p>
+
+<form action="/register" method="post">
+    <label for="username">Username:</label><br>
+    <input type="text" id="username" name="username" required><br><br>
+
+    <label for="password">Password:</label><br>
+    <input type="password" id="password" name="password" required><br><br>
+
+    <input type="submit" value="Register">
+</form>
+{% endblock %}
