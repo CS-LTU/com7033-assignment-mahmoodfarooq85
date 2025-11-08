@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- This is my Data page -->
+<!-- It will show a small table from stroke_data.csv -->
+
+<h2>Health Data (stroke_data.csv)</h2>
+<p>This table is made from the stroke_data.csv file in my project folder.</p>
+
+<!-- table comes from Flask (variable "table") -->
+<div class="table-wrapper">
+    {{ table|safe }}
+</div>
+
+{% endblock %}
