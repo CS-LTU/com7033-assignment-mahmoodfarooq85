@@ -28,8 +28,6 @@ I open my project in VS Code and type the below written comand in the terminal,
 it shows, like this,
 "http://127.0.0.1:5000"
 
-now to About,
-Created by Mahmood Farooq 
 I also added simple unit test to check that all my pages on flask are working properly, these tests were  (Home, About and Register pages) by using this below comand in vs code terminal 
 "python -m unittest test_app.py"
 
