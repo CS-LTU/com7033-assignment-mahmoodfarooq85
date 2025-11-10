@@ -319,7 +319,8 @@ def internal_server_error(e):
 
 # Run the Flask app
 if __name__ == "__main__":
-    init_db() # create the database if not exists
+    init_db() # keep this line
+    print("Server starting at http://127.0.0.1:5000") # <-- add this
     app.run(debug=True)
 
 
