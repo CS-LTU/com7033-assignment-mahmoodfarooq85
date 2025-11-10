@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Patient Dashboard</h1>
+
+<p>Welcome, {{ username }}!</p>
+
+<p>This is your secure patient area.</p>
+
+<!-- Simple logout link so the patient can leave the secure area -->
+<p><a href="/logout">Logout</a></p>
+{% endblock %}

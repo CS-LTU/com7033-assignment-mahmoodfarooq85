@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Patients</h1>
+<p>Please use this page to add and manage patient records.</p>
+
+{% if message %}
+    <p>{{ message }}</p>
+{% endif %}
+
+<h3>Add a new patient</h3>
+<form method="post" style="margin-bottom: 20px;">
+    <label>Name:</label>
+    <input type="text" name="name" required style="margin:5px;"><br>
+
+    <label>Age:</label>
+    <input type="number" name="age" required min="0" style="margin:5px;"><br>
+
+    <label>Condition:</label>
+    <input type="text" name="condition" required style="margin:5px;"><br>
+
+    <input type="submit" value="Add patient"
+           style="background-color:#2196F3; color:white; border:none; padding:6px 12px; cursor:pointer; margin-top:8px;">
+</form>
+
+<h2>Existing patients</h2>
+
+{% if patients %}
+    <table border="1" cellpadding="8" cellspacing="0"
+       style="border-collapse: collapse; width: 100%; text-align: left;">
+       <tr style="background-color: #f2f2f2; font-weight: bold;">
+    <th>ID</th>
+    <th>Name</th>
+    <th>Age</th>
+    <th>Condition</th>
+    <th>Actions</th>
+</tr>
+
+        {% for id, name, age, condition in patients %}
+        <tr>
+            <td>{{ id }}</td>
+            <td>{{ name }}</td>
+            <td>{{ age }}</td>
+            <td>{{ condition }}</td>
+            <td>
+                <!-- Small inline form to UPDATE this patient -->
+                <form action="/patients/update" method="post" style="display:inline;">
+                    <!-- Hidden field: which patient are we updating? -->
+                    <input type="hidden" name="id" value="{{ id }}">
+
+                    <!-- Editable fields, pre-filled with current values -->
+                    Name:
+                    <input type="text" name="name" value="{{ name }}" size="8">
+                    Age:
+                    <input type="number" name="age" value="{{ age }}" min="0" size="3">
+                    Condition:
+                    <input type="text" name="condition" value="{{ condition }}" size="10">
+
+                    <input type="submit" value="Update">
+                </form>
+
+                <!-- Small inline form to DELETE this patient -->
+                <form action="/patients/delete" method="post" style="display:inline; margin-left: 4px;">
+                    <input type="hidden" name="id" value="{{ id }}">
+                    <input type="submit" value="Delete">
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+{% else %}
+    <p>No patients in the system yet.</p>
+{% endif %}
+{% endblock %}
