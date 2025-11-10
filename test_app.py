@@ -1,28 +1,28 @@
 import unittest
-from app import app
+from app import app # import your Flask app object
 
-# This file is for testing my Flask web application pages, and to make sure that all my pages (Home, About, Register) are working fine.
 
 class BasicTests(unittest.TestCase):
+    def setUp(self):
+        # Put the app in testing mode and create a test client
+        app.config["TESTING"] = True
+        self.client = app.test_client()
 
-    # This test is to  check if the home page loads correctly
-    def test_home_page(self):
-        tester = app.test_client(self) # creates a fake browser to test my site
-        response = tester.get('/', content_type='html/text') # visits home page
-        self.assertEqual(response.status_code, 200) # 200 means page loaded successfully
-
-    # This test to check if the about page loads correctly
-    def test_about_page(self):
-        tester = app.test_client(self)
-        response = tester.get('/about', content_type='html/text') # visits about page
+    def test_home_page_status_code(self):
+        """Home page should load successfully (status code 200)."""
+        response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
 
-    # This test is to check if the register page loads correctly
-    def test_register_page(self):
-        tester = app.test_client(self)
-        response = tester.get('/register', content_type='html/text') # visits register page
+    def test_register_page_status_code(self):
+        """Register page should load successfully."""
+        response = self.client.get("/register")
         self.assertEqual(response.status_code, 200)
 
-# This part runs the tests when I use the command in terminal
+    def test_login_page_status_code(self):
+        """Login page should load successfully."""
+        response = self.client.get("/login")
+        self.assertEqual(response.status_code, 200)
+
+
 if __name__ == "__main__":
     unittest.main()

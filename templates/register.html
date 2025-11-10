@@ -1,21 +1,35 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- This is my web application Register page -->
-<!-- It register a new user to sign up and save details -->
 <h1>Register</h1>
+
+<!-- This line shows success OR error from Python -->
 {% if message %}
   <p>{{ message }}</p>
 {% endif %}
+
+<p>Please fill in all fields and select a role.</p>
 <p>Please fill in the form below to create an account.</p>
 
 <form action="/register" method="post">
-    <label for="username">Username:</label><br>
-    <input type="text" id="username" name="username" required><br><br>
+  <label for="username">Username:</label><br>
+  <input type="text" id="username" name="username" required><br><br>
 
-    <label for="password">Password:</label><br>
-    <input type="password" id="password" name="password" required><br><br>
+  <label for="password">Password:</label><br>
+<input type="password" id="password" name="password" required><br><br>
 
-    <input type="submit" value="Register">
+<label for="confirm_password">Confirm Password:</label><br>
+<input type="password" id="confirm_password" name="confirm_password" required><br><br>
+
+
+  <label for="role">Select Role:</label><br>
+  <select id="role" name="role" required>
+    <option value="">-- Select Role --</option>
+    <option value="doctor">Doctor</option>
+    <option value="patient">Patient</option>
+  </select><br><br>
+
+  <input type="submit" value="Register">
 </form>
 {% endblock %}
+
