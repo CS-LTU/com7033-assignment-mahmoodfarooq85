@@ -1,74 +1,144 @@
 {% extends "base.html" %}
-{% block content %}
+{% block title %}Patients{% endblock %}
 
+{% block content %}
 <h1>Patients</h1>
-<p>Please use this page to add and manage patient records.</p>
 
 {% if message %}
-    <p>{{ message }}</p>
+  <p style="color:#2e7d32; font-weight:600;">{{ message }}</p>
 {% endif %}
 
-<h3>Add a new patient</h3>
-<form method="post" style="margin-bottom: 20px;">
-    <label>Name:</label>
-    <input type="text" name="name" required style="margin:5px;"><br>
-
-    <label>Age:</label>
-    <input type="number" name="age" required min="0" style="margin:5px;"><br>
-
-    <label>Condition:</label>
-    <input type="text" name="condition" required style="margin:5px;"><br>
-
-    <input type="submit" value="Add patient"
-           style="background-color:#2196F3; color:white; border:none; padding:6px 12px; cursor:pointer; margin-top:8px;">
+<!-- =========================
+     Add Patient (SQLite DB)
+     ========================= -->
+<h3>Add Patient</h3>
+<form method="post" action="{{ url_for('patients') }}" style="margin-bottom:1rem;">
+  <label style="margin-right:.5rem;">Name:</label>
+  <input name="name" required>
+  <label style="margin:0 .5rem 0 1rem;">Age:</label>
+  <input name="age" required style="width:6rem;">
+  <label style="margin:0 .5rem 0 1rem;">Condition:</label>
+  <input name="condition" required style="width:16rem;">
+  <button type="submit" style="margin-left:1rem;">Add Patient</button>
 </form>
 
-<h2>Existing patients</h2>
-
-{% if patients %}
-    <table border="1" cellpadding="8" cellspacing="0"
-       style="border-collapse: collapse; width: 100%; text-align: left;">
-       <tr style="background-color: #f2f2f2; font-weight: bold;">
-    <th>ID</th>
-    <th>Name</th>
-    <th>Age</th>
-    <th>Condition</th>
-    <th>Actions</th>
-</tr>
-
-        {% for id, name, age, condition in patients %}
+<!-- =========================
+     Existing Patients (DB)
+     ========================= -->
+<h3>Existing Patients (DB)</h3>
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; width:100%; margin-bottom:1.5rem;">
+  <thead>
+    <tr>
+      <th style="width:5rem;">ID</th>
+      <th style="width:20%;">Name</th>
+      <th style="width:6rem;">Age</th>
+      <th>Condition</th>
+      <th style="width:10rem;">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% if patients and patients|length > 0 %}
+      {% for p in patients %}
         <tr>
-            <td>{{ id }}</td>
-            <td>{{ name }}</td>
-            <td>{{ age }}</td>
-            <td>{{ condition }}</td>
+          <!-- Inline UPDATE form -->
+          <form method="post" action="{{ url_for('update_patient') }}">
             <td>
-                <!-- Small inline form to UPDATE this patient -->
-                <form action="/patients/update" method="post" style="display:inline;">
-                    <!-- Hidden field: which patient are we updating? -->
-                    <input type="hidden" name="id" value="{{ id }}">
+              <input name="id" value="{{ p[0] }}" readonly style="width:4rem; text-align:center; background:#f6f6f6;">
+            </td>
+            <td><input name="name" value="{{ p[1] }}" required style="width:100%;"></td>
+            <td><input name="age" value="{{ p[2] }}" required style="width:5rem;"></td>
+            <td><input name="condition" value="{{ p[3] }}" required style="width:100%;"></td>
+            <td>
+              <button type="submit">Update</button>
+          </form>
 
-                    <!-- Editable fields, pre-filled with current values -->
-                    Name:
-                    <input type="text" name="name" value="{{ name }}" size="8">
-                    Age:
-                    <input type="number" name="age" value="{{ age }}" min="0" size="3">
-                    Condition:
-                    <input type="text" name="condition" value="{{ condition }}" size="10">
-
-                    <input type="submit" value="Update">
-                </form>
-
-                <!-- Small inline form to DELETE this patient -->
-                <form action="/patients/delete" method="post" style="display:inline; margin-left: 4px;">
-                    <input type="hidden" name="id" value="{{ id }}">
-                    <input type="submit" value="Delete">
-                </form>
+          <!-- Separate DELETE form (so button only deletes) -->
+              <form method="post" action="{{ url_for('delete_patient') }}" style="display:inline;">
+                <input type="hidden" name="id" value="{{ p[0] }}">
+                <button type="submit" onclick="return confirm('Delete patient ID {{ p[0] }}?');">Delete</button>
+              </form>
             </td>
         </tr>
+      {% endfor %}
+    {% else %}
+      <tr><td colspan="5" style="text-align:center; color:#666;">No patients found.</td></tr>
+    {% endif %}
+  </tbody>
+</table>
+
+<!-- =========================
+     Stroke CSV (paged)
+     ========================= -->
+<h3>Stroke Data (from stroke_data.csv)</h3>
+{% set cols = ['id','gender','age','hypertension','heart_disease','ever_married','work_type','Residence_type','avg_glucose_level','bmi','smoking_status','stroke'] %}
+
+{% if csv_rows and csv_rows|length > 0 %}
+  <div style="max-width:100%; overflow:auto; border:1px solid #ddd; padding:.5rem;">
+    <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; width:100%;">
+      <thead>
+        <tr>
+          {# Hidden technical index column (not shown) #}
+          {% for c in cols %}
+            {% if c in csv_rows[0] %}
+              <th>{{ c }}</th>
+            {% endif %}
+          {% endfor %}
+          <th style="width:140px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in csv_rows %}
+          <tr>
+            <!-- UPDATE form for this CSV row -->
+            <form method="post" action="{{ url_for('update_stroke_row') }}">
+              <input type="hidden" name="row_index" value="{{ row._idx }}">
+              {% for c in cols %}
+                {% if c in row %}
+                  <td>
+                    <input name="{{ c }}" value="{{ row[c] }}" style="min-width:110px; width:100%;">
+                  </td>
+                {% endif %}
+              {% endfor %}
+              <td>
+                <button type="submit">Update</button>
+            </form>
+                <!-- Separate DELETE form -->
+                <form method="post" action="{{ url_for('delete_stroke_row') }}" style="display:inline;">
+                  <input type="hidden" name="row_index" value="{{ row._idx }}">
+                  <button type="submit" onclick="return confirm('Delete CSV row {{ row._idx }}?');">Delete</button>
+                </form>
+              </td>
+          </tr>
         {% endfor %}
+      </tbody>
     </table>
+  </div>
+
+  <!-- Pagination controls -->
+  <div style="margin-top:.75rem; display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
+    <span style="color:#444;">Rows per page: {{ page_size }} | Total: {{ total_rows }}</span>
+    <div style="margin-left:auto; display:flex; gap:.25rem; align-items:center;">
+      {% if page > 1 %}
+        <a href="{{ url_for('patients', page=1) }}">&laquo; First</a>
+        <a href="{{ url_for('patients', page=page-1) }}">&lsaquo; Prev</a>
+      {% else %}
+        <span style="color:#aaa;">&laquo; First</span>
+        <span style="color:#aaa;">&lsaquo; Prev</span>
+      {% endif %}
+
+      <span style="padding:0 .5rem;">Page {{ page }} / {{ total_pages }}</span>
+
+      {% if page < total_pages %}
+        <a href="{{ url_for('patients', page=page+1) }}">Next &rsaquo;</a>
+        <a href="{{ url_for('patients', page=total_pages) }}">Last &raquo;</a>
+      {% else %}
+        <span style="color:#aaa;">Next &rsaquo;</span>
+        <span style="color:#aaa;">Last &raquo;</span>
+      {% endif %}
+    </div>
+  </div>
 {% else %}
-    <p>No patients in the system yet.</p>
+  <p style="color:#666;">No CSV rows found or CSV couldn’t be loaded.</p>
 {% endif %}
+
 {% endblock %}

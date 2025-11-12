@@ -1,15 +1,17 @@
-{% extends 'base.html' %}
-
+{% extends "base.html" %}
 {% block content %}
-<!-- This is my web page Home page -->
+<h1>Welcome to {{ HOSPITAL_NAME }} </h1>
 
-<h1>Welcome, Mahmood 👋</h1>
-<p>This is the home page of your first secure Flask web application.</p>
-<p>Next steps we will add:</p>
+<p>
+  At {{ HOSPITAL_NAME }}, we are  dedicated to providing best available healthcare
+  with a personal touch. Our focus is to combine our service with
+  modern technology thus to improve the wellbeing of every patient we serve.
+</p>
+
+<h3>Our Main Services</h3>
 <ul>
-  <li>User registration &amp; login</li>
-  <li>SQLite database to store users</li>
-  <li>Security features like password hashing &amp; validation</li>
+  <li><strong>Patient Records:</strong> View and manage patient information.</li>
+  <li><strong>Doctor & Staff Access:</strong> Registered users can log in to update records and provide care efficiently.</li>
 </ul>
 
 {% endblock %}
