@@ -4,7 +4,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>{{ title or "Hospital Secure Web App" }}</title>
+<title>{{ HOSPITAL_NAME }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -39,12 +39,11 @@
     <header>
         <h2>Hospital Secure Web App</h2>
         <nav>
-    <a href="{{ url_for('home') }}">Home</a>
+    <a class="brand" href="{{ url_for('home') }}">{{ HOSPITAL_NAME }}</a>
     <a href="{{ url_for('about') }}">About</a>
     <a href="{{ url_for('register') }}">Register</a>
     <a href="{{ url_for('login') }}">Login</a>
     <a href="{{ url_for('patients') }}">Patients</a>
-    <a href="{{ url_for('show_data') }}">Data</a>
 </nav>
 
     </header>
