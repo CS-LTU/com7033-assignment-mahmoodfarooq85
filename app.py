@@ -1,326 +1,325 @@
 # Importing necessary libraries
+import os
 import sqlite3
-import pandas as pd
-from flask import Flask, render_template, request
-from werkzeug.security import generate_password_hash, check_password_hash
 import logging
+from math import ceil
 
-# Enable logging
-logging.basicConfig(filename='app.log', level=logging.INFO)
+from flask import Flask, render_template, request, redirect, url_for
+from werkzeug.security import generate_password_hash, check_password_hash
 
-# Initialising the Flask web application
+# Optional: pandas for CSV handling
+import pandas as pd
+
+# ---------- Settings ----------
+DB_NAME = "users.db"
+DATA_CSV = "stroke_data.csv" # must exist in the project folder
+PAGE_SIZE = 50 # CSV rows per page (tune as you like)
+
+# ---------- App + Logging ----------
 app = Flask(__name__)
-DB_NAME = 'users.db'
+app.config["HOSPITAL_NAME"] = "CityCare Hospital"
 
-# This function to create database and users table
+logging.basicConfig(filename="app.log", level=logging.INFO)
+
+@app.context_processor
+def inject_globals():
+    return {"HOSPITAL_NAME": app.config.get("HOSPITAL_NAME", "Hospital")}
+
+# ---------- DB Bootstrapping ----------
 def init_db():
-    # Creating the database and users table if they do not exist
+    os.makedirs(os.path.dirname(os.path.abspath(DB_NAME)), exist_ok=True)
     with sqlite3.connect(DB_NAME) as conn:
-        cursor = conn.cursor()
+        cur = conn.cursor()
 
-        # --- Users table (for login/registration) ---
-        cursor.execute("""
+        # Users table (for register/login)
+        cur.execute(
+            """
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT NOT NULL UNIQUE,
                 password_hash TEXT NOT NULL,
                 role TEXT NOT NULL
             )
-        """)
+            """
+        )
 
-        # --- Patients table (for CRUD demo) ---
-        # This simple table will store a patient's name, age, and condition.
-        cursor.execute("""
+        # Patients table (CRUD demo)
+        cur.execute(
+            """
             CREATE TABLE IF NOT EXISTS patients (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 age INTEGER NOT NULL,
                 condition TEXT NOT NULL
             )
-        """)
-
+            """
+        )
         conn.commit()
 
-# Route for home page
+# ---------- Simple Pages ----------
 @app.route("/")
 def home():
     return render_template("home.html")
 
-
-# Route for about page
 @app.route("/about")
 def about():
     return render_template("about.html")
 
-
-# Route for register page
-@app.route('/register', methods=['GET', 'POST'])
+# ---------- Auth (minimal demo) ----------
+@app.route("/register", methods=["GET", "POST"])
 def register():
-    """
-    This function handles the register page.
-    GET -> show empty form
-    POST -> read the form, validate, save user, show a message
-    """
-    message = "" # default message is empty
+    message = ""
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        confirm = request.form.get("confirm_password", "")
+        role = request.form.get("role", "").strip()
 
-    if request.method == 'POST':
-        # 1️⃣ Read values from the form
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '')
-        confirm_password = request.form.get('confirm_password', '')
-        role = request.form.get('role', '').strip()
-
-        # 2️⃣ Basic validation
-        if not username or not password or not confirm_password or not role:
+        if not username or not password or not confirm or not role:
             message = "Please fill in all fields and select a role."
-        elif password != confirm_password:
-            message = "Passwords do not match. Please try again."
+        elif password != confirm:
+            message = "Passwords do not match."
         else:
-            # 3️⃣ Hash password and insert user
-            hashed_password = generate_password_hash(password)
             try:
                 with sqlite3.connect(DB_NAME) as conn:
-                    cursor = conn.cursor()
-                    cursor.execute(
-                        "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-                        (username, hashed_password, role),
+                    cur = conn.cursor()
+                    cur.execute(
+                        "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+                        (username, generate_password_hash(password), role),
                     )
                     conn.commit()
                 message = f"User '{username}' registered successfully as {role.capitalize()}!"
             except sqlite3.IntegrityError:
-                message = "That username is already taken. Please choose another."
+                message = "That username already exists."
+    return render_template("register.html", message=message)
 
-    # 4️⃣ Always render the register page with message
-    return render_template('register.html', message=message)
-
-
-# Route for login page
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    """
-    This function handles the login page.
-    - GET -> show empty login form
-    - POST -> check username + password, then send to correct dashboard
-    """
-    message = "" # default: no message
-
+    message = ""
     if request.method == "POST":
-        # 1) Read values from the form
         username = request.form.get("username", "").strip()
-        password = request.form.get("password", "").strip()
-
+        password = request.form.get("password", "")
         if not username or not password:
             message = "Please enter both username and password."
         else:
-            # 2) Look up this user in the database
             with sqlite3.connect(DB_NAME) as conn:
                 cur = conn.cursor()
-                cur.execute(
-                    "SELECT password_hash, role FROM users WHERE username = ?",
-                    (username,)
-                )
+                cur.execute("SELECT password_hash, role FROM users WHERE username = ?", (username,))
                 row = cur.fetchone()
-
-            if row is None:
-                # No such username
+            if not row:
                 message = "Invalid username or password."
             else:
                 stored_hash, role = row
-
-                # 3) Check the password against the stored hash
                 if check_password_hash(stored_hash, password):
-                    # 4) Send to doctor or patient dashboard
+                    # Demo dashboards (templates should exist)
                     if role.lower() == "doctor":
                         return render_template("doctor_dashboard.html", username=username)
                     elif role.lower() == "patient":
                         return render_template("patient_dashboard.html", username=username)
                     else:
-                        message = "Unknown role. Please contact admin."
+                        message = "Unknown role."
                 else:
                     message = "Invalid username or password."
-
-    # If GET request or there was an error, show the login page again
     return render_template("login.html", message=message)
-# Route for logging out the user
+
 @app.route("/logout")
 def logout():
-    # Show the login page again with a friendly message
-    message = "You have been logged out successfully."
-    return render_template("login.html", message=message)
-# Route for patients page (simple placeholder for now)
+    return render_template("login.html", message="You have been logged out successfully.")
+
+# ---------- Patients (DB CRUD + CSV with pagination + row CRUD) ----------
 @app.route("/patients", methods=["GET", "POST"])
 def patients():
     """
-    This route handles the Patients page.
-
-    - GET -> show the form and the list of existing patients
-    - POST -> read the form, validate it, save a new patient, then show a message
+    - POST: Add a new patient to the SQLite DB
+    - GET : Render page with:
+        * DB patients (with update/delete forms handled by dedicated routes)
+        * CSV data (paged) with Update/Delete per row using the true DataFrame index
     """
-    message = "" # default: no message
-
-    # --- 1) If the user submitted the 'Add Patient' form ---
-    if request.method == "POST":
-        # Read values from the form (and strip spaces from start/end)
-        name = request.form.get("name", "").strip()
-        age_raw = request.form.get("age", "").strip()
-        condition = request.form.get("condition", "").strip()
-
-        # --- 2) Basic validation on the form input ---
-        if not name or not age_raw or not condition:
-            # If any field is empty, ask the user to fill them all
-            message = "Please fill in all fields."
-        else:
-            try:
-                # Try to convert age to an integer
-                age = int(age_raw)
-
-                # Age should be a positive number
-                if age <= 0:
-                    raise ValueError
-            except ValueError:
-                # If conversion fails or age <= 0, show an error
-                message = "Age must be a positive number."
-            else:
-                # --- 3) Save the new patient into the database ---
-                with sqlite3.connect(DB_NAME) as conn:
-                    cursor = conn.cursor()
-                    cursor.execute(
-                        "INSERT INTO patients (name, age, condition) VALUES (?, ?, ?)",
-                        (name, age, condition),
-                    )
-                    conn.commit()
-
-                # Friendly success message
-                message = f"Patient '{name}' added successfully."
-
-    # --- 4) For both GET and POST: load all patients from the database ---
-    with sqlite3.connect(DB_NAME) as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, name, age, condition FROM patients")
-        patients = cursor.fetchall()
-
-    # --- 5) Show the template, sending the patient list and any message ---
-    return render_template("patients.html", patients=patients, message=message)
-
-
-# Route to UPDATE an existing patient
-@app.route("/patients/update", methods=["POST"])
-def update_patient():
-    """Update an existing patient record."""
     message = ""
 
-    # 1) Read values from the update form
-    patient_id = request.form.get("id", "").strip()
-    name = request.form.get("name", "").strip()
-    age = request.form.get("age", "").strip()
-    condition = request.form.get("condition", "").strip()
+    # Handle "Add Patient" form (DB)
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        age_str = request.form.get("age", "").strip()
+        condition = request.form.get("condition", "").strip()
 
-    # 2) Basic validation
-    if not patient_id or not name or not age or not condition:
+        if not name or not age_str or not condition:
+            message = "Please fill in all fields to add a patient."
+        else:
+            try:
+                age_int = int(age_str)
+                if age_int <= 0:
+                    message = "Age must be a positive number."
+                else:
+                    with sqlite3.connect(DB_NAME) as conn:
+                        cur = conn.cursor()
+                        cur.execute(
+                            "INSERT INTO patients (name, age, condition) VALUES (?, ?, ?)",
+                            (name, age_int, condition),
+                        )
+                        conn.commit()
+                    message = f"Patient '{name}' added successfully."
+            except ValueError:
+                message = "Age must be a number."
+
+    # Read DB patients
+    with sqlite3.connect(DB_NAME) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT id, name, age, condition FROM patients ORDER BY id ASC")
+        patients_list = cur.fetchall()
+
+    # CSV pagination
+    page = int(request.args.get("page", 1))
+    if page < 1:
+        page = 1
+
+    csv_rows = []
+    total_rows = 0
+    try:
+        df = pd.read_csv(DATA_CSV).fillna("")
+        total_rows = len(df)
+
+        # keep the true index for safe CRUD
+        df = df.reset_index(drop=False).rename(columns={"index": "_idx"})
+
+        wanted = [
+            "id", "gender", "age", "hypertension", "heart_disease", "ever_married",
+            "work_type", "Residence_type", "avg_glucose_level", "bmi",
+            "smoking_status", "stroke"
+        ]
+        cols = ["_idx"] + [c for c in wanted if c in df.columns]
+
+        start = (page - 1) * PAGE_SIZE
+        end = start + PAGE_SIZE
+        page_df = df.loc[start:end-1, cols]
+        csv_rows = page_df.to_dict(orient="records")
+    except Exception as e:
+        app.logger.exception("Failed to load CSV")
+        message = f"Could not load dataset: {e}"
+
+    total_pages = max(1, ceil(total_rows / PAGE_SIZE))
+
+    return render_template(
+        "patients.html",
+        message=message,
+        patients=patients_list,
+        csv_rows=csv_rows,
+        page=page,
+        total_pages=total_pages,
+        total_rows=total_rows,
+        page_size=PAGE_SIZE
+    )
+
+# ----- Patients (DB) Update/Delete -----
+@app.route("/patients/update", methods=["POST"])
+def update_patient():
+    message = ""
+    pid = request.form.get("id", "").strip()
+    name = request.form.get("name", "").strip()
+    age_s = request.form.get("age", "").strip()
+    cond = request.form.get("condition", "").strip()
+
+    if not pid or not name or not age_s or not cond:
         message = "Please fill in all fields for update."
     else:
         try:
-            id_int = int(patient_id)
-            age_int = int(age)
-
-            if id_int <= 0 or age_int <= 0:
+            pid_i = int(pid)
+            age_i = int(age_s)
+            if pid_i <= 0 or age_i <= 0:
                 message = "ID and age must be positive numbers."
             else:
-                # 3) Try to update the record in the database
                 with sqlite3.connect(DB_NAME) as conn:
-                    cursor = conn.cursor()
-                    cursor.execute(
+                    cur = conn.cursor()
+                    cur.execute(
                         "UPDATE patients SET name = ?, age = ?, condition = ? WHERE id = ?",
-                        (name, age_int, condition, id_int),
+                        (name, age_i, cond, pid_i),
                     )
-
-                    # rowcount tells us if a row was actually updated
-                    if cursor.rowcount == 0:
-                        message = f"No patient found with ID {id_int}."
+                    if cur.rowcount == 0:
+                        message = f"No patient found with ID {pid_i}."
                     else:
                         conn.commit()
-                        message = f"Patient {id_int} updated successfully."
+                        message = f"Patient {pid_i} updated successfully."
         except ValueError:
             message = "ID and age must be numbers."
 
-    # 4) Re-read all patients and show the page again
-    with sqlite3.connect(DB_NAME) as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, name, age, condition FROM patients ORDER BY id")
-        patients = cursor.fetchall()
+    return redirect(url_for("patients", message=message))
 
-    return render_template("patients.html", message=message, patients=patients)
-
-# Route to DELETE an existing patient
 @app.route("/patients/delete", methods=["POST"])
 def delete_patient():
-    """Delete a patient record."""
     message = ""
-
-    # 1) Read the patient ID from the delete form
-    patient_id = request.form.get("id", "").strip()
-
-    if not patient_id:
+    pid = request.form.get("id", "").strip()
+    if not pid:
         message = "Please provide a patient ID to delete."
     else:
         try:
-            id_int = int(patient_id)
-
-            if id_int <= 0:
+            pid_i = int(pid)
+            if pid_i <= 0:
                 message = "ID must be a positive number."
             else:
                 with sqlite3.connect(DB_NAME) as conn:
-                    cursor = conn.cursor()
-                    cursor.execute("DELETE FROM patients WHERE id = ?", (id_int,))
-
-                    if cursor.rowcount == 0:
-                        message = f"No patient found with ID {id_int}."
+                    cur = conn.cursor()
+                    cur.execute("DELETE FROM patients WHERE id = ?", (pid_i,))
+                    if cur.rowcount == 0:
+                        message = f"No patient found with ID {pid_i}."
                     else:
                         conn.commit()
-                        message = f"Patient {id_int} deleted successfully."
+                        message = f"Patient {pid_i} deleted successfully."
         except ValueError:
             message = "ID must be a number."
+    return redirect(url_for("patients", message=message))
 
-    # 2) Re-read all patients and show the page again
-    with sqlite3.connect(DB_NAME) as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, name, age, condition FROM patients ORDER BY id")
-        patients = cursor.fetchall()
+# ----- CSV Update/Delete (by true DataFrame index) -----
+@app.post("/patients/stroke/update")
+def update_stroke_row():
+    message = ""
+    try:
+        idx = int(request.form.get("row_index", "-1"))
+        df = pd.read_csv(DATA_CSV).fillna("")
+        if idx < 0 or idx >= len(df):
+            message = f"Row {idx} not found."
+            return redirect(url_for("patients"))
 
-    return render_template("patients.html", message=message, patients=patients)
+        # Update only provided fields
+        for col in ["id","gender","age","hypertension","heart_disease","ever_married",
+                    "work_type","Residence_type","avg_glucose_level","bmi",
+                    "smoking_status","stroke"]:
+            if col in request.form and request.form[col] != "":
+                val = request.form[col]
+                if col in ["age", "avg_glucose_level", "bmi"]:
+                    try:
+                        val = float(val)
+                    except ValueError:
+                        message = f"Invalid value for {col}"
+                        return redirect(url_for("patients"))
+                df.at[idx, col] = val
 
-@app.route("/show_data")
-def show_data():
-    # 1) Read the CSV file into a pandas DataFrame
-    df = pd.read_csv("stroke_data.csv")
+        df.to_csv(DATA_CSV, index=False)
+        message = f"Row {idx} updated."
+    except Exception as e:
+        app.logger.exception("Update error")
+        message = f"Update error: {e}"
+    return redirect(url_for("patients"))
 
-    # 2) Take only the first 20 rows so the table is small
-    small_df = df.head(20)
+@app.post("/patients/stroke/delete")
+def delete_stroke_row():
+    message = ""
+    try:
+        idx = int(request.form.get("row_index", "-1"))
+        df = pd.read_csv(DATA_CSV).fillna("")
+        if idx < 0 or idx >= len(df):
+            message = f"Row {idx} not found."
+            return redirect(url_for("patients"))
 
-    # 3) Turn the DataFrame into an HTML table
-    table_html = small_df.to_html(
-        classes="data-table", # CSS class name (for styling later)
-        index=False # Do not show the index column
-    )
+        df = df.drop(index=idx).reset_index(drop=True)
+        df.to_csv(DATA_CSV, index=False)
+        message = f"Row {idx} deleted."
+    except Exception as e:
+        app.logger.exception("Delete error")
+        message = f"Delete error: {e}"
+    return redirect(url_for("patients"))
 
-    # 4) Send the table HTML into our data.html template as "table"
-    return render_template("data.html", table=table_html)
-
-# ERROR HANDLING ROUTES
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template("404.html"), 404
-
-
-@app.errorhandler(500)
-def internal_server_error(e):
-    return render_template("500.html"), 500
-
-
-# Run the Flask app
+# ---------- Run ----------
 if __name__ == "__main__":
-    init_db() # keep this line
-    print("Server starting at http://127.0.0.1:5000") # <-- add this
+    init_db()
+    print("Server running at http://127.0.0.1:5000")
     app.run(debug=True)
-
-

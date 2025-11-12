@@ -1,15 +1,22 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% block content %}
+<h1>About {{ HOSPITAL_NAME }}</h1>
 
-<!-- This is my web page About page -->
-<!-- It tells what this project is -->
+<p>
+  {{ HOSPITAL_NAME }} is a trusted hospital focused on delivering
+  safe and high-quality medical services. We believe in putting patients first,
+  making sure every individual receives the best possible care and attention.
+</p>
 
-<h2>About This Project</h2>
-<p>This system demonstrates key web security and data management concepts.</p>
-<p>It includes user registration, database integration (SQLite), and basic encryption and validation techniques.</p>
+<h3>Our Mission</h3>
+<p>
+  Our mission is to help people get better. We'll give you the best care.
+</p>
 
-<p><b>Developed by:</b> Mahmood Farooq</p>
-<p><b>Version:</b> 1.0</p>
-<p><i>Last updated:</i> November 2025</p>
-
+<h3>Our Commitment</h3>
+<ul>
+  <li>Providing care for every patient.</li>
+  <li>Safeguarding all health information.</li>
+  <li>Supporting medical staff/professionals with best tools.</li>
+</ul>
 {% endblock %}
