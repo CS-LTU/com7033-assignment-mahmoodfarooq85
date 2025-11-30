@@ -1,4 +1,3 @@
-# app.py
 # Importing necessary libraries
 import os
 import sqlite3
@@ -38,6 +37,28 @@ logging.basicConfig(filename="app.log", level=logging.INFO)
 @app.context_processor
 def inject_globals():
     return {"HOSPITAL_NAME": app.config.get("HOSPITAL_NAME", "Hospital")}
+
+
+# ---------- Auth helper: login + role protection ----------
+def login_required(role=None):
+    """
+    - If user is not logged in -> redirect to login
+    - If role is given and doesn't match session["role"] -> deny access
+    """
+    def wrapper(fn):
+        @wraps(fn)
+        def decorated(*args, **kwargs):
+            if not session.get("username"):
+                flash("You must be logged in to access that page.", "error")
+                return redirect(url_for("login"))
+
+            if role and session.get("role") != role:
+                flash("Access denied: you do not have permission for that page.", "error")
+                return redirect(url_for("login"))
+
+            return fn(*args, **kwargs)
+        return decorated
+    return wrapper
 
 
 # ---------- DB Bootstrapping ----------
@@ -84,7 +105,7 @@ def about():
     return render_template("about.html")
 
 
-# ---------- Auth (minimal demo) ----------
+# ---------- Auth (register / login / logout) ----------
 @app.route("/register", methods=["GET", "POST"])
 def register():
     message = ""
@@ -200,14 +221,16 @@ def logout():
     return render_template("login.html", message="You have been logged out successfully.")
 
 
-# ---------- Dashboards ----------
+# ---------- Dashboards (secured by role) ----------
 @app.route("/doctor_dashboard")
+@login_required(role="doctor")
 def doctor_dashboard():
     # doctor_dashboard.html extends base.html
     return render_template("doctor_dashboard.html")
 
 
 @app.route("/patient_dashboard")
+@login_required(role="patient")
 def patient_dashboard():
     # patient_dashboard.html extends base.html
     return render_template("patient_dashboard.html")
@@ -215,6 +238,7 @@ def patient_dashboard():
 
 # ---------- Patients (DB CRUD + CSV with pagination + row CRUD) ----------
 @app.route("/patients", methods=["GET", "POST"])
+@login_required(role="doctor") # only doctor can access patients page
 def patients():
     """
     - POST: Add a new patient to the SQLite DB
@@ -309,6 +333,7 @@ def patients():
 
 # ----- Patients (DB) Update/Delete -----
 @app.route("/patients/update", methods=["POST"])
+@login_required(role="doctor")
 def update_patient():
     message = ""
     pid = request.form.get("id", "").strip()
@@ -343,6 +368,7 @@ def update_patient():
 
 
 @app.route("/patients/delete", methods=["POST"])
+@login_required(role="doctor")
 def delete_patient():
     message = ""
     pid = request.form.get("id", "").strip()
@@ -369,6 +395,7 @@ def delete_patient():
 
 # ----- CSV Update/Delete (by true DataFrame index) -----
 @app.post("/patients/stroke/update")
+@login_required(role="doctor")
 def update_stroke_row():
     message = ""
     try:
@@ -412,6 +439,7 @@ def update_stroke_row():
 
 
 @app.post("/patients/stroke/delete")
+@login_required(role="doctor")
 def delete_stroke_row():
     message = ""
     try:

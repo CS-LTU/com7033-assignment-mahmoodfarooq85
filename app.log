@@ -1372,3 +1372,66 @@ INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:17:58] "GET / HTTP/1.1" 200 -
 INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:18:00] "GET /register HTTP/1.1" 200 -
 INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:18:13] "POST /register HTTP/1.1" 200 -
 INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:18:29] "POST /register HTTP/1.1" 200 -
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 200-268-419
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:41:57] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:41:58] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:42:00] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:42:08] "[32mPOST /login HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:42:08] "GET /doctor_dashboard HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:42:13] "GET /patients HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:42:22] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:42:30] "[32mPOST /login HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:42:30] "GET /doctor_dashboard HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:43:01] "GET /logout HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:43:11] "POST /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:43:24] "POST /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:43:31] "[32mPOST /login HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:43:31] "GET /patient_dashboard HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:43:40] "GET /logout HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:43:43] "[32mGET /patients HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:43:43] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:43:45] "[32mGET /patients HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:43:45] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:43:47] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:43:49] "[32mGET /patients HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:43:49] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:43:50] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:43:52] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:43:52] "[32mGET /patients HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:43:52] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:01] "[32mPOST /login HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:01] "GET /doctor_dashboard HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:06] "GET /logout HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:08] "[32mGET /patients HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:08] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:13] "[32mGET /patients HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:13] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:13] "[32mGET /patients HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:13] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:14] "GET /register HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:17] "GET /about HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:20] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:21] "[32mGET /patients HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:21] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:24] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:25] "[32mGET /patients HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:25] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:32] "[32mPOST /login HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:32] "GET /doctor_dashboard HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:45] "GET /patients HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:48] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:44:53] "GET /patients HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:45:16] "[32mPOST /patients/stroke/update HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:45:17] "GET /patients HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:45:25] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:45:51] "[32mPOST /login HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:45:51] "GET /doctor_dashboard HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:45:53] "GET /patients HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:45:55] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:45:57] "GET /about HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [30/Nov/2025 19:45:58] "GET / HTTP/1.1" 200 -
