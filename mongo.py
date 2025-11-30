@@ -6,9 +6,10 @@ load_dotenv()
 
 MONGO_URI = os.getenv("MONGO_URI")
 
-client = MongoClient(MONGO_URI)
-db = client['hospital_db'] # You can name your DB
-
-users_collection = db['users'] # A 'users' collection
-
-print("MongoDB connection successful")
+try:
+    client = MongoClient(MONGO_URI)
+    db = client["hospital_db"] # database name
+    users_collection = db["users"] # collection name
+    print("MongoDB connection successful!")
+except Exception as e:
+    print("MongoDB connection failed:", e)

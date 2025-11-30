@@ -1,16 +1,26 @@
+# app.py
 # Importing necessary libraries
 import os
 import sqlite3
 import logging
 from math import ceil
+from datetime import datetime
+from functools import wraps
 
-from flask import Flask, render_template, request, redirect, url_for
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    session,
+    flash,
+)
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # Optional: pandas for CSV handling
 import pandas as pd
-from mongo import db, users_collection
-from datetime import datetime
+from mongo import db, users_collection # your existing mongo helper
 
 # ---------- Settings ----------
 DB_NAME = "users.db"
@@ -19,16 +29,20 @@ PAGE_SIZE = 50 # CSV rows per page (tune as you like)
 
 # ---------- App + Logging ----------
 app = Flask(__name__)
+app.secret_key = "change_this_to_any_random_secret_string"
 app.config["HOSPITAL_NAME"] = "CityCare Hospital"
 
 logging.basicConfig(filename="app.log", level=logging.INFO)
+
 
 @app.context_processor
 def inject_globals():
     return {"HOSPITAL_NAME": app.config.get("HOSPITAL_NAME", "Hospital")}
 
+
 # ---------- DB Bootstrapping ----------
 def init_db():
+    # ensure folder exists
     os.makedirs(os.path.dirname(os.path.abspath(DB_NAME)), exist_ok=True)
     with sqlite3.connect(DB_NAME) as conn:
         cur = conn.cursor()
@@ -58,19 +72,23 @@ def init_db():
         )
         conn.commit()
 
+
 # ---------- Simple Pages ----------
 @app.route("/")
 def home():
     return render_template("home.html")
 
+
 @app.route("/about")
 def about():
     return render_template("about.html")
+
 
 # ---------- Auth (minimal demo) ----------
 @app.route("/register", methods=["GET", "POST"])
 def register():
     message = ""
+
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "").strip()
@@ -83,25 +101,30 @@ def register():
             message = "Passwords do not match."
         else:
             try:
-                hashed_password = generate_password_hash(password) # Hash once
-
-                # Save to SQLite
+                # 1) Save to SQLite
                 with sqlite3.connect(DB_NAME) as conn:
                     cur = conn.cursor()
-                    cur.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-                                (username, hashed_password, role))
+                    cur.execute(
+                        "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+                        (username, generate_password_hash(password), role),
+                    )
                     conn.commit()
 
-                # Save to MongoDB — additional redundancy
-                users_collection.insert_one({
-                    "username": username,
-                    "password_hash": hashed_password,
-                    "role": role,
-                    "created_at": datetime.utcnow()
-                })
+                # 2) Also save to MongoDB (optional extra feature)
+                try:
+                    users_collection.insert_one(
+                        {
+                            "username": username,
+                            "password_hash": generate_password_hash(password),
+                            "role": role,
+                            "created_at": datetime.utcnow(),
+                        }
+                    )
+                except Exception as e:
+                    # Don't crash the app if Mongo insert fails
+                    app.logger.warning(f"Mongo insert failed for {username}: {e}")
 
                 message = f"User '{username}' registered successfully as {role.capitalize()}!"
-                return render_template("register.html", message=message)
 
             except sqlite3.IntegrityError:
                 message = "That username already exists."
@@ -110,38 +133,85 @@ def register():
 
     return render_template("register.html", message=message)
 
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     message = ""
+
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
+
         if not username or not password:
-            message = "Please enter both username and password."
-        else:
-            with sqlite3.connect(DB_NAME) as conn:
-                cur = conn.cursor()
-                cur.execute("SELECT password_hash, role FROM users WHERE username = ?", (username,))
-                row = cur.fetchone()
-            if not row:
-                message = "Invalid username or password."
+            message = "Please fill in all fields."
+            return render_template("login.html", message=message)
+
+        # 1) Try SQLite first
+        with sqlite3.connect(DB_NAME) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT password_hash, role FROM users WHERE username = ?",
+                (username,),
+            )
+            row = cur.fetchone()
+
+        if row and check_password_hash(row[0], password):
+            role = row[1]
+            session["username"] = username
+            session["role"] = role
+
+            flash(f"Welcome back, {username} ({role.capitalize()})!", "success")
+
+            if role == "doctor":
+                return redirect(url_for("doctor_dashboard"))
+            elif role == "patient":
+                return redirect(url_for("patient_dashboard"))
             else:
-                stored_hash, role = row
-                if check_password_hash(stored_hash, password):
-                    # Demo dashboards (templates should exist)
-                    if role.lower() == "doctor":
-                        return render_template("doctor_dashboard.html", username=username)
-                    elif role.lower() == "patient":
-                        return render_template("patient_dashboard.html", username=username)
-                    else:
-                        message = "Unknown role."
-                else:
-                    message = "Invalid username or password."
+                return redirect(url_for("home"))
+
+        # 2) If not found in SQLite, try MongoDB
+        user_doc = users_collection.find_one({"username": username})
+
+        if user_doc and check_password_hash(user_doc["password_hash"], password):
+            role = user_doc["role"]
+
+            session["username"] = username
+            session["role"] = role
+
+            flash(f"Welcome back, {username} ({role.capitalize()})!", "success")
+
+            if role == "doctor":
+                return redirect(url_for("doctor_dashboard"))
+            elif role == "patient":
+                return redirect(url_for("patient_dashboard"))
+            else:
+                return redirect(url_for("home"))
+
+        # If both checks fail
+        message = "Invalid username or password."
+
     return render_template("login.html", message=message)
+
 
 @app.route("/logout")
 def logout():
+    # clear session so user is really logged out
+    session.clear()
     return render_template("login.html", message="You have been logged out successfully.")
+
+
+# ---------- Dashboards ----------
+@app.route("/doctor_dashboard")
+def doctor_dashboard():
+    # doctor_dashboard.html extends base.html
+    return render_template("doctor_dashboard.html")
+
+
+@app.route("/patient_dashboard")
+def patient_dashboard():
+    # patient_dashboard.html extends base.html
+    return render_template("patient_dashboard.html")
+
 
 # ---------- Patients (DB CRUD + CSV with pagination + row CRUD) ----------
 @app.route("/patients", methods=["GET", "POST"])
@@ -200,15 +270,24 @@ def patients():
         df = df.reset_index(drop=False).rename(columns={"index": "_idx"})
 
         wanted = [
-            "id", "gender", "age", "hypertension", "heart_disease", "ever_married",
-            "work_type", "Residence_type", "avg_glucose_level", "bmi",
-            "smoking_status", "stroke"
+            "id",
+            "gender",
+            "age",
+            "hypertension",
+            "heart_disease",
+            "ever_married",
+            "work_type",
+            "Residence_type",
+            "avg_glucose_level",
+            "bmi",
+            "smoking_status",
+            "stroke",
         ]
         cols = ["_idx"] + [c for c in wanted if c in df.columns]
 
         start = (page - 1) * PAGE_SIZE
         end = start + PAGE_SIZE
-        page_df = df.loc[start:end-1, cols]
+        page_df = df.loc[start : end - 1, cols]
         csv_rows = page_df.to_dict(orient="records")
     except Exception as e:
         app.logger.exception("Failed to load CSV")
@@ -224,8 +303,9 @@ def patients():
         page=page,
         total_pages=total_pages,
         total_rows=total_rows,
-        page_size=PAGE_SIZE
+        page_size=PAGE_SIZE,
     )
+
 
 # ----- Patients (DB) Update/Delete -----
 @app.route("/patients/update", methods=["POST"])
@@ -261,6 +341,7 @@ def update_patient():
 
     return redirect(url_for("patients", message=message))
 
+
 @app.route("/patients/delete", methods=["POST"])
 def delete_patient():
     message = ""
@@ -285,6 +366,7 @@ def delete_patient():
             message = "ID must be a number."
     return redirect(url_for("patients", message=message))
 
+
 # ----- CSV Update/Delete (by true DataFrame index) -----
 @app.post("/patients/stroke/update")
 def update_stroke_row():
@@ -297,9 +379,20 @@ def update_stroke_row():
             return redirect(url_for("patients"))
 
         # Update only provided fields
-        for col in ["id","gender","age","hypertension","heart_disease","ever_married",
-                    "work_type","Residence_type","avg_glucose_level","bmi",
-                    "smoking_status","stroke"]:
+        for col in [
+            "id",
+            "gender",
+            "age",
+            "hypertension",
+            "heart_disease",
+            "ever_married",
+            "work_type",
+            "Residence_type",
+            "avg_glucose_level",
+            "bmi",
+            "smoking_status",
+            "stroke",
+        ]:
             if col in request.form and request.form[col] != "":
                 val = request.form[col]
                 if col in ["age", "avg_glucose_level", "bmi"]:
@@ -316,6 +409,7 @@ def update_stroke_row():
         app.logger.exception("Update error")
         message = f"Update error: {e}"
     return redirect(url_for("patients"))
+
 
 @app.post("/patients/stroke/delete")
 def delete_stroke_row():
@@ -334,6 +428,7 @@ def delete_stroke_row():
         app.logger.exception("Delete error")
         message = f"Delete error: {e}"
     return redirect(url_for("patients"))
+
 
 # ---------- Run ----------
 if __name__ == "__main__":
