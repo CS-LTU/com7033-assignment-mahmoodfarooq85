@@ -9,6 +9,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 # Optional: pandas for CSV handling
 import pandas as pd
+from mongo import db, users_collection
+from datetime import datetime
 
 # ---------- Settings ----------
 DB_NAME = "users.db"
@@ -71,8 +73,8 @@ def register():
     message = ""
     if request.method == "POST":
         username = request.form.get("username", "").strip()
-        password = request.form.get("password", "")
-        confirm = request.form.get("confirm_password", "")
+        password = request.form.get("password", "").strip()
+        confirm = request.form.get("confirm_password", "").strip()
         role = request.form.get("role", "").strip()
 
         if not username or not password or not confirm or not role:
@@ -81,16 +83,31 @@ def register():
             message = "Passwords do not match."
         else:
             try:
+                hashed_password = generate_password_hash(password) # Hash once
+
+                # Save to SQLite
                 with sqlite3.connect(DB_NAME) as conn:
                     cur = conn.cursor()
-                    cur.execute(
-                        "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-                        (username, generate_password_hash(password), role),
-                    )
+                    cur.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+                                (username, hashed_password, role))
                     conn.commit()
+
+                # Save to MongoDB — additional redundancy
+                users_collection.insert_one({
+                    "username": username,
+                    "password_hash": hashed_password,
+                    "role": role,
+                    "created_at": datetime.utcnow()
+                })
+
                 message = f"User '{username}' registered successfully as {role.capitalize()}!"
+                return render_template("register.html", message=message)
+
             except sqlite3.IntegrityError:
                 message = "That username already exists."
+            except Exception as e:
+                message = f"Registration failed: {e}"
+
     return render_template("register.html", message=message)
 
 @app.route("/login", methods=["GET", "POST"])
