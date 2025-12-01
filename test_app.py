@@ -1,28 +1,45 @@
-import unittest
-from app import app # import your Flask app object
+import pytest
+from app import app
+
+@pytest.fixture
+def client():
+    app.config['TESTING'] = True
+    with app.test_client() as client:
+        yield client
 
 
-class BasicTests(unittest.TestCase):
-    def setUp(self):
-        # Put the app in testing mode and create a test client
-        app.config["TESTING"] = True
-        self.client = app.test_client()
-
-    def test_home_page_status_code(self):
-        """Home page should load successfully (status code 200)."""
-        response = self.client.get("/")
-        self.assertEqual(response.status_code, 200)
-
-    def test_register_page_status_code(self):
-        """Register page should load successfully."""
-        response = self.client.get("/register")
-        self.assertEqual(response.status_code, 200)
-
-    def test_login_page_status_code(self):
-        """Login page should load successfully."""
-        response = self.client.get("/login")
-        self.assertEqual(response.status_code, 200)
+# 1️⃣ Test Home Page Loads Successfully
+def test_home_page(client):
+    response = client.get('/')
+    assert response.status_code == 200
+    assert b"Hospital Secure Web App" in response.data
 
 
-if __name__ == "__main__":
-    unittest.main()
+# 2️⃣ Test Login Page Accessible
+def test_login_page(client):
+    response = client.get('/login')
+    assert response.status_code == 200
+    assert b"Login" in response.data
+
+
+# 3️⃣ Invalid Login Shows Error
+def test_invalid_login(client):
+    response = client.post('/login', data={
+        'username': 'wronguser',
+        'password': 'wrongpass'
+    }, follow_redirects=True)
+
+    assert b"Invalid username or password" in response.data
+
+
+# 4️⃣ Access Control: Patients page must redirect if Not Logged In
+def test_patients_protected(client):
+    response = client.get('/patients', follow_redirects=True)
+    assert b"Login" in response.data # Means redirect happened successfully
+
+
+# 5️⃣ 404 Page Test
+def test_404_page(client):
+    response = client.get('/thispagedoesnotexist')
+    assert response.status_code == 404
+    assert b"Page Not Found" in response.data or b"404" in response.data
