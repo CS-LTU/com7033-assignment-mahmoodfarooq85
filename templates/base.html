@@ -1,10 +1,8 @@
 <!doctype html>
-<!-- This is the base of my web application page -->
-<!-- It connects other pages like Home, About, and Register -->
 <html lang="en">
 <head>
     <meta charset="utf-8">
-<title>{{ HOSPITAL_NAME }}</title>
+    <title>{{ HOSPITAL_NAME }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -12,20 +10,53 @@
             padding: 0;
             background: #f5f5f5;
         }
+
         header {
             background: #222;
             color: #fff;
             padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+
+        .brand {
+            font-size: 20px;
+            font-weight: bold;
+            margin-right: 20px;
+            text-decoration: none;
+            color: #fff;
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
         nav a {
             color: #fff;
-            margin-right: 15px;
             text-decoration: none;
             font-weight: bold;
         }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        .nav-right {
+            font-size: 14px;
+        }
+
+        .nav-user {
+            margin-right: 10px;
+            opacity: 0.9;
+        }
+
         .container {
             padding: 20px;
         }
+
         footer {
             background: #eee;
             text-align: center;
@@ -36,24 +67,42 @@
     </style>
 </head>
 <body>
-    <header>
-        <h2>Hospital Secure Web App</h2>
-        <nav>
-    <a class="brand" href="{{ url_for('home') }}">{{ HOSPITAL_NAME }}</a>
-    <a href="{{ url_for('about') }}">About</a>
-    <a href="{{ url_for('register') }}">Register</a>
-    <a href="{{ url_for('login') }}">Login</a>
-    <a href="{{ url_for('patients') }}">Patients</a>
-</nav>
+<header>
+    <!-- LEFT: main navigation -->
+    <nav>
+        <a class="brand" href="{{ url_for('home') }}">{{ HOSPITAL_NAME }}</a>
+        <a href="{{ url_for('about') }}">About</a>
 
-    </header>
+        {# Doctor-only links #}
+        {% if session.get('role') == 'doctor' %}
+            <a href="{{ url_for('patients') }}">Patients</a>
+            <a href="{{ url_for('doctor_dashboard') }}">Doctor Dashboard</a>
+        {% elif session.get('role') == 'patient' %}
+            <a href="{{ url_for('patient_dashboard') }}">Patient Dashboard</a>
+        {% endif %}
+    </nav>
 
-    <div class="container">
-        {% block content %}{% endblock %}
-    </div>
+    <!-- RIGHT: auth area -->
+    <nav class="nav-right">
+        {% if session.get('username') %}
+            <span class="nav-user">
+                Logged in as {{ session['username'] }}
+                ({{ session['role']|capitalize }})
+            </span>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+            <a href="{{ url_for('register') }}">Register</a>
+            <a href="{{ url_for('login') }}">Login</a>
+        {% endif %}
+    </nav>
+</header>
 
-    <footer>
-        &copy; 2025 Mahmood - Secure Software Development
-    </footer>
+<div class="container">
+    {% block content %}{% endblock %}
+</div>
+
+<footer>
+    &copy; 2025 Mahmood – Secure Software Development (COM7033)
+</footer>
 </body>
 </html>

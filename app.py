@@ -19,12 +19,15 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 # Optional: pandas for CSV handling
 import pandas as pd
-from mongo import db, users_collection # your existing mongo helper
+
+# MongoDB helper (from your mongo.py)
+from mongo import db, users_collection
+patients_collection = db["patients"]
 
 # ---------- Settings ----------
 DB_NAME = "users.db"
-DATA_CSV = "stroke_data.csv" # must exist in the project folder
-PAGE_SIZE = 50 # CSV rows per page (tune as you like)
+DATA_CSV = "stroke_data.csv" # must exist in project folder
+PAGE_SIZE = 50 # rows per CSV page
 
 # ---------- App + Logging ----------
 app = Flask(__name__)
@@ -36,10 +39,11 @@ logging.basicConfig(filename="app.log", level=logging.INFO)
 
 @app.context_processor
 def inject_globals():
+    # So templates can use {{ HOSPITAL_NAME }}
     return {"HOSPITAL_NAME": app.config.get("HOSPITAL_NAME", "Hospital")}
 
 
-# ---------- Auth helper: login + role protection ----------
+# ---------- Auth helper ----------
 def login_required(role=None):
     """
     - If user is not logged in -> redirect to login
@@ -53,7 +57,7 @@ def login_required(role=None):
                 return redirect(url_for("login"))
 
             if role and session.get("role") != role:
-                flash("Access denied: you do not have permission for that page.", "error")
+                flash("Access denied: insufficient permissions.", "error")
                 return redirect(url_for("login"))
 
             return fn(*args, **kwargs)
@@ -61,14 +65,13 @@ def login_required(role=None):
     return wrapper
 
 
-# ---------- DB Bootstrapping ----------
+# ---------- Database Setup ----------
 def init_db():
-    # ensure folder exists
     os.makedirs(os.path.dirname(os.path.abspath(DB_NAME)), exist_ok=True)
     with sqlite3.connect(DB_NAME) as conn:
         cur = conn.cursor()
 
-        # Users table (for register/login)
+        # Users table
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS users (
@@ -80,7 +83,7 @@ def init_db():
             """
         )
 
-        # Patients table (CRUD demo)
+        # Patients table
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS patients (
@@ -94,7 +97,7 @@ def init_db():
         conn.commit()
 
 
-# ---------- Simple Pages ----------
+# ---------- Public Pages ----------
 @app.route("/")
 def home():
     return render_template("home.html")
@@ -105,52 +108,51 @@ def about():
     return render_template("about.html")
 
 
-# ---------- Auth (register / login / logout) ----------
+# ---------- Authentication ----------
 @app.route("/register", methods=["GET", "POST"])
 def register():
     message = ""
 
     if request.method == "POST":
         username = request.form.get("username", "").strip()
-        password = request.form.get("password", "").strip()
-        confirm = request.form.get("confirm_password", "").strip()
-        role = request.form.get("role", "").strip()
+        password = request.form.get("password", "")
+        confirm = request.form.get("confirm_password", "")
+        role = request.form.get("role", "")
 
         if not username or not password or not confirm or not role:
-            message = "Please fill in all fields and select a role."
+            message = "Please fill all fields."
         elif password != confirm:
             message = "Passwords do not match."
         else:
             try:
-                # 1) Save to SQLite
+                pwd_hash = generate_password_hash(password)
+
+                # SQLite
                 with sqlite3.connect(DB_NAME) as conn:
                     cur = conn.cursor()
                     cur.execute(
                         "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-                        (username, generate_password_hash(password), role),
+                        (username, pwd_hash, role),
                     )
                     conn.commit()
 
-                # 2) Also save to MongoDB (optional extra feature)
+                # Optional: also mirror into MongoDB
                 try:
                     users_collection.insert_one(
                         {
                             "username": username,
-                            "password_hash": generate_password_hash(password),
+                            "password_hash": pwd_hash,
                             "role": role,
                             "created_at": datetime.utcnow(),
                         }
                     )
                 except Exception as e:
-                    # Don't crash the app if Mongo insert fails
-                    app.logger.warning(f"Mongo insert failed for {username}: {e}")
+                    app.logger.warning(f"Mongo user insert failed for {username}: {e}")
 
-                message = f"User '{username}' registered successfully as {role.capitalize()}!"
+                message = f"User '{username}' registered successfully!"
 
             except sqlite3.IntegrityError:
-                message = "That username already exists."
-            except Exception as e:
-                message = f"Registration failed: {e}"
+                message = "Username already exists."
 
     return render_template("register.html", message=message)
 
@@ -158,7 +160,6 @@ def register():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     message = ""
-
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
@@ -167,7 +168,6 @@ def login():
             message = "Please fill in all fields."
             return render_template("login.html", message=message)
 
-        # 1) Try SQLite first
         with sqlite3.connect(DB_NAME) as conn:
             cur = conn.cursor()
             cur.execute(
@@ -181,8 +181,6 @@ def login():
             session["username"] = username
             session["role"] = role
 
-            flash(f"Welcome back, {username} ({role.capitalize()})!", "success")
-
             if role == "doctor":
                 return redirect(url_for("doctor_dashboard"))
             elif role == "patient":
@@ -190,25 +188,6 @@ def login():
             else:
                 return redirect(url_for("home"))
 
-        # 2) If not found in SQLite, try MongoDB
-        user_doc = users_collection.find_one({"username": username})
-
-        if user_doc and check_password_hash(user_doc["password_hash"], password):
-            role = user_doc["role"]
-
-            session["username"] = username
-            session["role"] = role
-
-            flash(f"Welcome back, {username} ({role.capitalize()})!", "success")
-
-            if role == "doctor":
-                return redirect(url_for("doctor_dashboard"))
-            elif role == "patient":
-                return redirect(url_for("patient_dashboard"))
-            else:
-                return redirect(url_for("home"))
-
-        # If both checks fail
         message = "Invalid username or password."
 
     return render_template("login.html", message=message)
@@ -216,81 +195,100 @@ def login():
 
 @app.route("/logout")
 def logout():
-    # clear session so user is really logged out
     session.clear()
-    return render_template("login.html", message="You have been logged out successfully.")
+    return redirect(url_for("login"))
 
 
-# ---------- Dashboards (secured by role) ----------
+# ---------- Dashboards ----------
 @app.route("/doctor_dashboard")
 @login_required(role="doctor")
 def doctor_dashboard():
-    # doctor_dashboard.html extends base.html
     return render_template("doctor_dashboard.html")
 
 
 @app.route("/patient_dashboard")
 @login_required(role="patient")
 def patient_dashboard():
-    # patient_dashboard.html extends base.html
     return render_template("patient_dashboard.html")
 
 
-# ---------- Patients (DB CRUD + CSV with pagination + row CRUD) ----------
+# ---------- Patients CRUD + CSV ----------
 @app.route("/patients", methods=["GET", "POST"])
-@login_required(role="doctor") # only doctor can access patients page
+@login_required(role="doctor")
 def patients():
     """
-    - POST: Add a new patient to the SQLite DB
-    - GET : Render page with:
-        * DB patients (with update/delete forms handled by dedicated routes)
-        * CSV data (paged) with Update/Delete per row using the true DataFrame index
+    - POST: Add new patient to SQLite (main DB) + MongoDB (second DB).
+    - GET : Show
+        * SQLite patients with update/delete
+        * stroke_data.csv rows with pagination + CRUD.
     """
     message = ""
 
-    # Handle "Add Patient" form (DB)
+    # ----- Add Patient (SQLite + Mongo) -----
     if request.method == "POST":
         name = request.form.get("name", "").strip()
-        age_str = request.form.get("age", "").strip()
-        condition = request.form.get("condition", "").strip()
+        age_s = request.form.get("age", "").strip()
+        cond = request.form.get("condition", "").strip()
 
-        if not name or not age_str or not condition:
-            message = "Please fill in all fields to add a patient."
+        if not name or not age_s or not cond:
+            message = "Fill all fields."
         else:
             try:
-                age_int = int(age_str)
-                if age_int <= 0:
+                age = int(age_s)
+                if age <= 0:
                     message = "Age must be a positive number."
                 else:
+                    # SQLite insert
                     with sqlite3.connect(DB_NAME) as conn:
                         cur = conn.cursor()
                         cur.execute(
                             "INSERT INTO patients (name, age, condition) VALUES (?, ?, ?)",
-                            (name, age_int, condition),
+                            (name, age, cond),
                         )
                         conn.commit()
-                    message = f"Patient '{name}' added successfully."
+                        patient_id = cur.lastrowid # get generated ID
+
+                    # Mirror into Mongo with same id
+                    try:
+                        patients_collection.insert_one(
+                            {
+                                "id": patient_id,
+                                "name": name,
+                                "age": age,
+                                "condition": cond,
+                                "created_at": datetime.utcnow(),
+                                "added_by": session.get("username"),
+                                "source": "web_form",
+                            }
+                        )
+                    except Exception as e:
+                        app.logger.warning(
+                            f"Mongo patient insert failed for {name}: {e}"
+                        )
+
+                    message = f"Patient '{name}' added."
             except ValueError:
                 message = "Age must be a number."
 
-    # Read DB patients
+    # ----- Read patients from SQLite -----
     with sqlite3.connect(DB_NAME) as conn:
         cur = conn.cursor()
         cur.execute("SELECT id, name, age, condition FROM patients ORDER BY id ASC")
         patients_list = cur.fetchall()
 
-    # CSV pagination
+    # ----- CSV pagination -----
     page = int(request.args.get("page", 1))
     if page < 1:
         page = 1
 
     csv_rows = []
     total_rows = 0
+
     try:
         df = pd.read_csv(DATA_CSV).fillna("")
         total_rows = len(df)
 
-        # keep the true index for safe CRUD
+        # keep true index for safe updates/deletes
         df = df.reset_index(drop=False).rename(columns={"index": "_idx"})
 
         wanted = [
@@ -307,15 +305,16 @@ def patients():
             "smoking_status",
             "stroke",
         ]
-        cols = ["_idx"] + [c for c in wanted if c in df.columns]
+        cols = [c for c in ["_idx"] + wanted if c in df.columns]
 
         start = (page - 1) * PAGE_SIZE
         end = start + PAGE_SIZE
-        page_df = df.loc[start : end - 1, cols]
+        page_df = df.loc[start:end - 1, cols]
         csv_rows = page_df.to_dict(orient="records")
     except Exception as e:
         app.logger.exception("Failed to load CSV")
-        message = f"Could not load dataset: {e}"
+        if not message:
+            message = f"Could not load dataset: {e}"
 
     total_pages = max(1, ceil(total_rows / PAGE_SIZE))
 
@@ -331,81 +330,88 @@ def patients():
     )
 
 
-# ----- Patients (DB) Update/Delete -----
+# ----- Patients (SQLite) UPDATE + mirror to Mongo -----
 @app.route("/patients/update", methods=["POST"])
 @login_required(role="doctor")
 def update_patient():
-    message = ""
     pid = request.form.get("id", "").strip()
     name = request.form.get("name", "").strip()
     age_s = request.form.get("age", "").strip()
     cond = request.form.get("condition", "").strip()
 
     if not pid or not name or not age_s or not cond:
-        message = "Please fill in all fields for update."
-    else:
-        try:
-            pid_i = int(pid)
-            age_i = int(age_s)
-            if pid_i <= 0 or age_i <= 0:
-                message = "ID and age must be positive numbers."
-            else:
-                with sqlite3.connect(DB_NAME) as conn:
-                    cur = conn.cursor()
-                    cur.execute(
-                        "UPDATE patients SET name = ?, age = ?, condition = ? WHERE id = ?",
-                        (name, age_i, cond, pid_i),
-                    )
-                    if cur.rowcount == 0:
-                        message = f"No patient found with ID {pid_i}."
-                    else:
-                        conn.commit()
-                        message = f"Patient {pid_i} updated successfully."
-        except ValueError:
-            message = "ID and age must be numbers."
+        flash("Fill all fields for update.", "error")
+        return redirect(url_for("patients"))
 
-    return redirect(url_for("patients", message=message))
+    try:
+        pid_i = int(pid)
+        age_i = int(age_s)
+    except ValueError:
+        flash("ID and age must be numbers.", "error")
+        return redirect(url_for("patients"))
+
+    # SQLite update
+    with sqlite3.connect(DB_NAME) as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE patients SET name = ?, age = ?, condition = ? WHERE id = ?",
+            (name, age_i, cond, pid_i),
+        )
+        conn.commit()
+
+    # Mongo update
+    try:
+        patients_collection.update_one(
+            {"id": pid_i},
+            {"$set": {"name": name, "age": age_i, "condition": cond}},
+            upsert=True,
+        )
+    except Exception as e:
+        app.logger.warning(f"Mongo patient update failed (id={pid_i}): {e}")
+
+    flash(f"Patient {pid_i} updated.", "success")
+    return redirect(url_for("patients"))
 
 
+# ----- Patients (SQLite) DELETE + mirror to Mongo -----
 @app.route("/patients/delete", methods=["POST"])
 @login_required(role="doctor")
 def delete_patient():
-    message = ""
     pid = request.form.get("id", "").strip()
-    if not pid:
-        message = "Please provide a patient ID to delete."
-    else:
-        try:
-            pid_i = int(pid)
-            if pid_i <= 0:
-                message = "ID must be a positive number."
-            else:
-                with sqlite3.connect(DB_NAME) as conn:
-                    cur = conn.cursor()
-                    cur.execute("DELETE FROM patients WHERE id = ?", (pid_i,))
-                    if cur.rowcount == 0:
-                        message = f"No patient found with ID {pid_i}."
-                    else:
-                        conn.commit()
-                        message = f"Patient {pid_i} deleted successfully."
-        except ValueError:
-            message = "ID must be a number."
-    return redirect(url_for("patients", message=message))
+
+    try:
+        pid_i = int(pid)
+    except ValueError:
+        flash("Invalid patient ID.", "error")
+        return redirect(url_for("patients"))
+
+    # SQLite delete
+    with sqlite3.connect(DB_NAME) as conn:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM patients WHERE id = ?", (pid_i,))
+        conn.commit()
+
+    # Mongo delete
+    try:
+        patients_collection.delete_one({"id": pid_i})
+    except Exception as e:
+        app.logger.warning(f"Mongo patient delete failed (id={pid_i}): {e}")
+
+    flash(f"Patient {pid_i} deleted.", "success")
+    return redirect(url_for("patients"))
 
 
 # ----- CSV Update/Delete (by true DataFrame index) -----
 @app.post("/patients/stroke/update")
 @login_required(role="doctor")
 def update_stroke_row():
-    message = ""
     try:
         idx = int(request.form.get("row_index", "-1"))
         df = pd.read_csv(DATA_CSV).fillna("")
         if idx < 0 or idx >= len(df):
-            message = f"Row {idx} not found."
+            flash(f"Row {idx} not found.", "error")
             return redirect(url_for("patients"))
 
-        # Update only provided fields
         for col in [
             "id",
             "gender",
@@ -426,36 +432,55 @@ def update_stroke_row():
                     try:
                         val = float(val)
                     except ValueError:
-                        message = f"Invalid value for {col}"
+                        flash(f"Invalid value for {col}.", "error")
                         return redirect(url_for("patients"))
                 df.at[idx, col] = val
 
         df.to_csv(DATA_CSV, index=False)
-        message = f"Row {idx} updated."
+        flash(f"Row {idx} updated.", "success")
     except Exception as e:
         app.logger.exception("Update error")
-        message = f"Update error: {e}"
+        flash(f"Update error: {e}", "error")
+
     return redirect(url_for("patients"))
 
 
 @app.post("/patients/stroke/delete")
 @login_required(role="doctor")
 def delete_stroke_row():
-    message = ""
     try:
         idx = int(request.form.get("row_index", "-1"))
         df = pd.read_csv(DATA_CSV).fillna("")
         if idx < 0 or idx >= len(df):
-            message = f"Row {idx} not found."
+            flash(f"Row {idx} not found.", "error")
             return redirect(url_for("patients"))
 
         df = df.drop(index=idx).reset_index(drop=True)
         df.to_csv(DATA_CSV, index=False)
-        message = f"Row {idx} deleted."
+        flash(f"Row {idx} deleted.", "success")
     except Exception as e:
         app.logger.exception("Delete error")
-        message = f"Delete error: {e}"
+        flash(f"Delete error: {e}", "error")
+
     return redirect(url_for("patients"))
+
+
+# ---------- Error Pages ----------
+@app.errorhandler(404)
+def not_found(e):
+    return render_template("404.html"), 404
+
+
+@app.errorhandler(500)
+def server_error(e):
+    app.logger.error(f"Server error: {e}")
+    return render_template("500.html", message="Internal Server Error"), 500
+
+
+@app.route("/force500")
+def force500():
+    # If you ever want to demo a 500 page manually
+    raise Exception("Simulated crash for demo")
 
 
 # ---------- Run ----------
