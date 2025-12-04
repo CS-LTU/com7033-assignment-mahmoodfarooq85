@@ -8,10 +8,10 @@ It has Home, About, Register, Login-(After login, Doctor Dashboard, Patient Dash
 A new user can register and log in securely(Both as Doctor and a Patient)
 
 Passwords are hashed, not stored in plain text.
-Users have roles → Doctor or Patient
+Users have roles → Doctor or Patient.
 Only Doctors can access and manage the Patients page.
 Doctors can Add / Update / Delete patients.
-It displays a real medical dataset (stroke_data.csv) this was provided by our teacher
+It displays a real medical dataset (stroke_data.csv) this was provided by our teacher.
            And
 User accounts are securely stored in SQLite (primary authentication database).
 Patient records are stored in MongoDB (demonstrates secure NoSQL usage).
@@ -38,7 +38,7 @@ PyCache folders
 app.log, cache files
 These helps alot in support of security
 
-  It has Unit Testing also
+  It has Unit Testing also.
 
 I write some tests using pytest to check that:
 
