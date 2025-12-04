@@ -22,9 +22,10 @@ Input validation is used to avoid bad data being saved.
 It also shows multiple secure development techniques.
 
   What Security Feature ih has?Listed below,
+  
 Password hashing using werkzeug.security
 Role-based access control (RBAC)
-Authentication checks before showing sensitive pages
+Authentication checks before showing sensitive pages.
 
 Input validation in forms
 
