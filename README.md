@@ -78,12 +78,19 @@ test_app.py::test_404_page PASSED.
   
   Run:
   
-python app.py (it shows like).
+python app.py.
 
-MongoDB connection OK
-Server running at http://127.0.0.1:5000
- * Serving Flask app 'app'
- * Debug mode: on
-MongoDB connection OK
+(it shows).
+
+MongoDB connection OK.
+
+Server running at http://127.0.0.1:5000.
+
+ * Serving Flask app 'app'.
+ * 
+ * Debug mode: on.
+ * 
+MongoDB connection OK.
+
 Server running at http://127.0.0.1:5000
     
