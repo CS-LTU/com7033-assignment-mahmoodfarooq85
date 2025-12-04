@@ -17,10 +17,10 @@ from flask import (
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# Optional: pandas for CSV handling
+#  pandas for CSV handling
 import pandas as pd
 
-# MongoDB helper (from your mongo.py)
+# MongoDB helper (from mongo.py)
 from mongo import db, users_collection
 patients_collection = db["patients"]
 
@@ -29,7 +29,7 @@ DB_NAME = "users.db"
 DATA_CSV = "stroke_data.csv" # must exist in project folder
 PAGE_SIZE = 50 # rows per CSV page
 
-# ---------- App + Logging ----------
+# ---- App + Logging -----
 app = Flask(__name__)
 app.secret_key = "change_this_to_any_random_secret_string"
 app.config["HOSPITAL_NAME"] = "CityCare Hospital"
@@ -65,7 +65,7 @@ def login_required(role=None):
     return wrapper
 
 
-# ---------- Database Setup ----------
+# ---Database Setup ----
 def init_db():
     os.makedirs(os.path.dirname(os.path.abspath(DB_NAME)), exist_ok=True)
     with sqlite3.connect(DB_NAME) as conn:
@@ -97,7 +97,7 @@ def init_db():
         conn.commit()
 
 
-# ---------- Public Pages ----------
+# ---- Public Pages ---
 @app.route("/")
 def home():
     return render_template("home.html")
@@ -108,7 +108,7 @@ def about():
     return render_template("about.html")
 
 
-# ---------- Authentication ----------
+# ---- Authentication -----
 @app.route("/register", methods=["GET", "POST"])
 def register():
     message = ""
@@ -136,7 +136,7 @@ def register():
                     )
                     conn.commit()
 
-                # Optional: also mirror into MongoDB
+                #  also mirror into MongoDB(if required)
                 try:
                     users_collection.insert_one(
                         {
@@ -199,7 +199,7 @@ def logout():
     return redirect(url_for("login"))
 
 
-# ---------- Dashboards ----------
+# ------ Dashboards -----
 @app.route("/doctor_dashboard")
 @login_required(role="doctor")
 def doctor_dashboard():
@@ -224,7 +224,7 @@ def patients():
     """
     message = ""
 
-    # ----- Add Patient (SQLite + Mongo) -----
+    # ----- Adding Patient (SQLite + Mongo) -----
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         age_s = request.form.get("age", "").strip()
@@ -270,13 +270,13 @@ def patients():
             except ValueError:
                 message = "Age must be a number."
 
-    # ----- Read patients from SQLite -----
+    # ----- Reading patients from SQLite -----
     with sqlite3.connect(DB_NAME) as conn:
         cur = conn.cursor()
         cur.execute("SELECT id, name, age, condition FROM patients ORDER BY id ASC")
         patients_list = cur.fetchall()
 
-    # ----- CSV pagination -----
+    # ----- for CSV pagination -----
     page = int(request.args.get("page", 1))
     if page < 1:
         page = 1
@@ -288,7 +288,7 @@ def patients():
         df = pd.read_csv(DATA_CSV).fillna("")
         total_rows = len(df)
 
-        # keep true index for safe updates/deletes
+        # To keep true index for safe updates/deletes
         df = df.reset_index(drop=False).rename(columns={"index": "_idx"})
 
         wanted = [
@@ -465,7 +465,7 @@ def delete_stroke_row():
     return redirect(url_for("patients"))
 
 
-# ---------- Error Pages ----------
+# --- For Error Pages ---
 @app.errorhandler(404)
 def not_found(e):
     return render_template("404.html"), 404
