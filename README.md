@@ -33,29 +33,34 @@ Session security (logout option)
 
 .gitignore protects sensitive files such as:
 
-users.db
-.env
-PyCache folders
-app.log, cache files
-These helps alot in support of security
+users.db.
+
+.env.
+
+PyCache folders.
+
+app.log, cache files.
+
+These helps alot in support of security.
+
 
   It has Unit Testing also.
 
 I write some tests using pytest to check that:
 
-Home page loads,
+Home page loads.
 
-Login page loads,
+Login page loads.
 
-Invalid login shows the correct message,
+Invalid login shows the correct message.
 
-Protected pages redirect when not logged in,
+Protected pages redirect when not logged in.
 
-Custom 404 and 500 pages return correct error responses,
+Custom 404 and 500 pages return correct error responses.
 
 To run tests:
 
-python -m pytest -
+python -m pytest .
 
 it shows in vs code terminal.
 
@@ -65,15 +70,15 @@ test_app.py::test_invalid_login PASSED
 test_app.py::test_patients_protected PASSED                                                                                                             
 test_app.py::test_404_page PASSED.           
 
-  How to Run the App Locally,
+  How to Run the App Locally.
   
-  Open the project folder in VS Code
+  Open the project folder in VS Code.
   
-  Open the terminal
+  Open the terminal.
   
   Run:
   
-python app.py (it shows like)
+python app.py (it shows like).
 
 MongoDB connection OK
 Server running at http://127.0.0.1:5000
