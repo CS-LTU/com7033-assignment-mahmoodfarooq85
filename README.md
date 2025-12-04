@@ -54,7 +54,11 @@ Protected pages redirect when not logged in,
 Custom 404 and 500 pages return correct error responses,
 
 To run tests:
-python -m pytest - it shows in vs code terminal 
+
+python -m pytest -
+
+it shows in vs code terminal.
+
 test_app.py::test_home_page PASSED                                                                                                                       
 test_app.py::test_login_page PASSED                                                                                                                      
 test_app.py::test_invalid_login PASSED                                                                                                                   
