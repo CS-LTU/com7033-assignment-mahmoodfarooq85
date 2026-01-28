@@ -2,7 +2,7 @@
 
 ## 📋 Project Overview
 
-A comprehensive, secure healthcare management system built with **Flask (Python)** for the Secure Software Development assignment (COM-7033). This professional-grade application demonstrates enterprise-level security practices, role-based access control, and comprehensive testing.
+A comprehensive, secure healthcare management system built with Flask (Python).This is professional grade application demonstrates advance level security practices, role-based access control, and comprehensive testing.
 
 **Live Features:**
 - 🏥 Professional healthcare data management
@@ -62,7 +62,6 @@ Protected Pages (Role-based):
 
 **Key Benefit:** Dual storage ensures data integrity and provides redundancy across different database technologies.
 
----
 
 ## 🔐 Security Features
 
@@ -132,79 +131,45 @@ python -m pytest --cov=. --cov-report=html
 50 passed in ~10 seconds
 ```
 
----
-
-## 🎨 Frontend Features
+## Frontend Features
 
 ### Professional Templates (HTML/CSS)
-- **base.html** - Main template with navigation
-- **home.html** - Hero section, features, statistics, testimonials
-- **about.html** - Company info, team, services, mission & values
-- **login.html** - Professional login form with alerts
-- **register.html** - Registration with 4 role selector, password strength indicator
-- **doctor_dashboard.html** - Patient stats, recent patients, patient table
-- **patient_dashboard.html** - Health metrics, appointments, medications
-- **staff_dashboard.html** - Tasks, responsibilities, activity feed
-- **admin_dashboard.html** - System metrics, user management, statistics
-- **patients.html** - Patient CRUD, CSV data management, pagination
-- **404.html** & **500.html** - Custom error pages
+- base.html- Main template with navigation
+- home.html- Hero section, features, statistics, testimonials
+- about.html - Company info, team, services, mission & values
+- login.html - Professional login form with alerts
+- register.html- Registration with 4 role selector, password strength indicator
+- doctor_dashboard.html- Patient stats, recent patients, patient table
+- patient_dashboard.html - Health metrics, appointments, medications
+- staff_dashboard.html- Tasks, responsibilities, activity feed
+- admin_dashboard.html - System metrics, user management, statistics
+- patients.html - Patient CRUD, CSV data management, pagination
+- 404.html & 500.html- Custom error pages
 
 ### Design Features
-- 🎯 Responsive grid layouts
-- 🌈 Professional color gradients
-- 📱 Mobile-friendly design
-- ✨ Hover effects and transitions
-- 🎨 Role-specific color themes
+- Responsive grid layouts
+-  Professional color gradients
+-  Role-specific color themes
 
----
 
-## 💻 Installation & Setup
 
-### Prerequisites
-- Python 3.8+
-- MongoDB (local or Atlas)
-- Git
 
-### Step 1: Clone Repository
-```bash
-git clone https://github.com/CS-LTU/com7033-assignment-mahmoodfarooq85.git
-cd "Secure Software Development Project"
-```
-
-### Step 2: Create Virtual Environment
-```bash
-python -m venv .venv
-.venv\Scripts\activate  # Windows
-source .venv/bin/activate  # macOS/Linux
-```
-
-### Step 3: Install Dependencies
-```bash
-pip install flask werkzeug pymongo python-dotenv pandas
-```
-
-### Step 4: Configure Environment
-Create `.env` file with MongoDB connection:
-```env
-MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/database_name
-```
-
-### Step 5: Run the Application
+ Run the Application
 ```bash
 python app.py
 ```
 
-**Output:**
-```
-MongoDB connection OK
+Output:
+✓ MongoDB connection OK
 Server running at http://127.0.0.1:5000
-```
+ * Serving Flask app 'app'
+ * Debug mode: off
 
 **Access the app:** Open browser to `http://localhost:5000`
 
 ---
 
-## 🧪 Test Credentials
+##  Test Credentials
 
 **For Testing:**
 
@@ -225,8 +190,6 @@ Admin Account:
   Username: admin
   Password: password123
 ```
-
-*Note: Create via registration page for actual use*
 
 ---
 
@@ -300,7 +263,7 @@ Admin Account:
 
 ---
 
-## 📈 Statistics
+##  Statistics
 
 | Metric | Count |
 |--------|-------|
@@ -314,7 +277,7 @@ Admin Account:
 
 ---
 
-## 🔧 Configuration
+##  Configuration
 
 ### Flask Settings
 ```python
@@ -331,53 +294,7 @@ app.config["HOSPITAL_NAME"] = "CityCare Hospital"
 - **MongoDB:** `mongo.log`
 - **All logs excluded from Git** (in .gitignore)
 
----
 
-## 🐛 Troubleshooting
 
-### MongoDB Connection Issues
-```
-Error: MongoDB connection failed
-Solution: Check .env file has correct MONGO_URI
-```
 
-### Port Already in Use
-```
-Error: Address already in use on port 5000
-Solution: python app.py --port 5001
-```
 
-### Tests Failing
-```
-Error: ModuleNotFoundError
-Solution: pip install -r requirements.txt
-```
-
----
-
-## 📝 Assignment Details
-
-- **Course:** COM-7033 Secure Software Development
-- **Assignment:** Healthcare Management System
-- **Status:** ✅ Complete - All requirements met
-- **Testing:** ✅ 50/50 tests passing
-- **Security:** ✅ Best practices implemented
-- **Documentation:** ✅ Comprehensive README
-
----
-
-## 📧 Contact & Support
-
-**Author:** Mahmood Farooq  
-**Repository:** [GitHub](https://github.com/CS-LTU/com7033-assignment-mahmoodfarooq85)
-
----
-
-## 📄 License
-
-This project is part of COM-7033 assignment at Leeds Trinity University.
-
----
-
-**Last Updated:** January 28, 2026  
-**Status:** Production Ready ✅
