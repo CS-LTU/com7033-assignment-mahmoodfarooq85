@@ -13,56 +13,54 @@
      ========================= -->
 <h3>Add Patient</h3>
 <form method="post" action="{{ url_for('patients') }}" style="margin-bottom:1rem;">
-  <label style="margin-right:.5rem;">Name:</label>
+  <label>Name:</label>
   <input name="name" required>
-  <label style="margin:0 .5rem 0 1rem;">Age:</label>
+
+  <label style="margin-left:1rem;">Age:</label>
   <input name="age" required style="width:6rem;">
-  <label style="margin:0 .5rem 0 1rem;">Condition:</label>
+
+  <label style="margin-left:1rem;">Condition:</label>
   <input name="condition" required style="width:16rem;">
+
   <button type="submit" style="margin-left:1rem;">Add Patient</button>
 </form>
 
 <!-- =========================
-     Existing Patients (DB)
+     Existing Patients (SQLite)
      ========================= -->
 <h3>Existing Patients (DB)</h3>
 <table border="1" cellpadding="6" cellspacing="0"
        style="border-collapse:collapse; width:100%; margin-bottom:1.5rem;">
   <thead>
     <tr>
-      <th style="width:5rem;">ID</th>
-      <th style="width:20%;">Name</th>
-      <th style="width:6rem;">Age</th>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Age</th>
       <th>Condition</th>
-      <th style="width:10rem;">Actions</th>
+      <th>Actions</th>
     </tr>
   </thead>
   <tbody>
-    {% if patients and patients|length > 0 %}
+    {% if patients %}
       {% for p in patients %}
         <tr>
-          <!-- Inline UPDATE form -->
           <form method="post" action="{{ url_for('update_patient') }}">
             <td>
               <input name="id" value="{{ p[0] }}" readonly
-                     style="width:4rem; text-align:center; background:#f6f6f6;">
+                     style="width:4rem; background:#f6f6f6;">
             </td>
-            <td><input name="name" value="{{ p[1] }}" required style="width:100%;"></td>
+            <td><input name="name" value="{{ p[1] }}" required></td>
             <td><input name="age" value="{{ p[2] }}" required style="width:5rem;"></td>
-            <td><input name="condition" value="{{ p[3] }}" required style="width:100%;"></td>
+            <td><input name="condition" value="{{ p[3] }}" required></td>
             <td>
               <button type="submit">Update</button>
-          </form>
-
-          <!-- Separate DELETE form (so button only deletes) -->
-              <form method="post" action="{{ url_for('delete_patient') }}" style="display:inline;">
-                <input type="hidden" name="id" value="{{ p[0] }}">
-                <button type="submit"
-                        onclick="return confirm('Delete patient ID {{ p[0] }}?');">
-                  Delete
-                </button>
-              </form>
+              <button type="submit"
+                      formaction="{{ url_for('delete_patient') }}"
+                      onclick="return confirm('Delete patient ID {{ p[0] }}?');">
+                Delete
+              </button>
             </td>
+          </form>
         </tr>
       {% endfor %}
     {% else %}
@@ -76,15 +74,16 @@
 </table>
 
 <!-- =========================
-     Stroke CSV (paged, READ-ONLY)
+     Stroke CSV (UPDATE / DELETE)
      ========================= -->
 <h3>Stroke Data (from stroke_data.csv)</h3>
+
 {% set cols = [
   'id','gender','age','hypertension','heart_disease','ever_married',
   'work_type','Residence_type','avg_glucose_level','bmi','smoking_status','stroke'
 ] %}
 
-{% if csv_rows and csv_rows|length > 0 %}
+{% if csv_rows %}
   <div style="max-width:100%; overflow:auto; border:1px solid #ddd; padding:.5rem;">
     <table border="1" cellpadding="6" cellspacing="0"
            style="border-collapse:collapse; width:100%;">
@@ -95,51 +94,69 @@
               <th>{{ c }}</th>
             {% endif %}
           {% endfor %}
+          <th>Actions</th>
         </tr>
       </thead>
+
       <tbody>
         {% for row in csv_rows %}
           <tr>
-            {% for c in cols %}
-              {% if c in row %}
-                <td style="min-width:110px;">
-                  {{ row[c] }}
-                </td>
-              {% endif %}
-            {% endfor %}
+            <form method="post">
+              <input type="hidden" name="row_index" value="{{ row._idx }}">
+
+              {% for c in cols %}
+                {% if c in row %}
+                  <td>
+                    {% if c == 'id' %}
+                      <input name="{{ c }}" value="{{ row[c] }}"
+                             readonly style="width:90px; background:#f6f6f6;">
+                    {% else %}
+                      <input name="{{ c }}" value="{{ row[c] }}" style="width:90px;">
+                    {% endif %}
+                  </td>
+                {% endif %}
+              {% endfor %}
+
+              <td>
+                <button type="submit"
+                        formaction="{{ url_for('update_stroke_row') }}">
+                  Update
+                </button>
+                <button type="submit"
+                        formaction="{{ url_for('delete_stroke_row') }}"
+                        onclick="return confirm('Delete this CSV row?');">
+                  Delete
+                </button>
+              </td>
+            </form>
           </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 
-  <!-- Pagination controls -->
-  <div style="margin-top:.75rem; display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
-    <span style="color:#444;">
-      Rows per page: {{ page_size }} | Total: {{ total_rows }}
-    </span>
-    <div style="margin-left:auto; display:flex; gap:.25rem; align-items:center;">
+  <!-- Pagination -->
+  <div style="margin-top:.75rem; display:flex; gap:.5rem; align-items:center;">
+    <span>Rows per page: {{ page_size }} | Total: {{ total_rows }}</span>
+
+    <div style="margin-left:auto;">
       {% if page > 1 %}
-        <a href="{{ url_for('patients', page=1) }}">&laquo; First</a>
-        <a href="{{ url_for('patients', page=page-1) }}">&lsaquo; Prev</a>
+        <a href="{{ url_for('patients', page=page-1) }}">Prev</a>
       {% else %}
-        <span style="color:#aaa;">&laquo; First</span>
-        <span style="color:#aaa;">&lsaquo; Prev</span>
+        <span style="color:#aaa;">Prev</span>
       {% endif %}
 
       <span style="padding:0 .5rem;">Page {{ page }} / {{ total_pages }}</span>
 
       {% if page < total_pages %}
-        <a href="{{ url_for('patients', page=page+1) }}">Next &rsaquo;</a>
-        <a href="{{ url_for('patients', page=total_pages) }}">Last &raquo;</a>
+        <a href="{{ url_for('patients', page=page+1) }}">Next</a>
       {% else %}
-        <span style="color:#aaa;">Next &rsaquo;</span>
-        <span style="color:#aaa;">Last &raquo;</span>
+        <span style="color:#aaa;">Next</span>
       {% endif %}
     </div>
   </div>
 {% else %}
-  <p style="color:#666;">No CSV rows found or CSV couldn’t be loaded.</p>
+  <p style="color:#666;">No CSV rows found.</p>
 {% endif %}
 
 {% endblock %}
