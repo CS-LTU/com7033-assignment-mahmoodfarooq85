@@ -1,24 +1,407 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>Login</h1>
 
-<!-- This line shows success or error messages from Python -->
-{% if message %}
-  <p style="color: red;">{{ message }}</p>
-{% endif %}
+<style>
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 70vh;
+        padding: 20px;
+    }
 
-{% if "Welcome back" not in message %}
-  <p>Please enter your username and password to log in.</p>
+    .login-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        width: 100%;
+        max-width: 420px;
+        padding: 40px;
+        animation: slideIn 0.3s ease;
+    }
 
-  <form action="/login" method="post">
-    <label for="username">Username:</label><br>
-    <input type="text" id="username" name="username" required><br><br>
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 
-    <label for="password">Password:</label><br>
-    <input type="password" id="password" name="password" required><br><br>
+    .login-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #f0f0f0;
+    }
 
-    <input type="submit" value="Login">
-  </form>
-{% endif %}
+    .login-header h1 {
+        color: #222;
+        margin: 0 0 10px 0;
+        font-size: 32px;
+    }
+
+    .login-header p {
+        color: #666;
+        margin: 0;
+        font-size: 14px;
+    }
+
+    .hospital-badge {
+        display: inline-block;
+        background: #007bff;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        margin-bottom: 20px;
+        text-transform: uppercase;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 8px;
+        color: #333;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 4px;
+        font-size: 14px;
+        transition: all 0.3s;
+        box-sizing: border-box;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        font-size: 13px;
+    }
+
+    .remember-me {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .remember-me input[type="checkbox"] {
+        cursor: pointer;
+    }
+
+    .forgot-password {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .forgot-password:hover {
+        text-decoration: underline;
+    }
+
+    .btn-login {
+        width: 100%;
+        padding: 12px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-bottom: 15px;
+    }
+
+    .btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+    }
+
+    .btn-login:active {
+        transform: translateY(0);
+    }
+
+    .divider {
+        text-align: center;
+        margin: 20px 0;
+        position: relative;
+        color: #999;
+        font-size: 13px;
+    }
+
+    .divider:before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        width: 100%;
+        height: 1px;
+        background: #e0e0e0;
+    }
+
+    .divider span {
+        background: white;
+        padding: 0 10px;
+        position: relative;
+        display: inline-block;
+    }
+
+    .register-section {
+        text-align: center;
+        padding: 20px;
+        background: #f9f9f9;
+        border-radius: 4px;
+        margin-top: 20px;
+    }
+
+    .register-section p {
+        margin: 0 0 10px 0;
+        color: #666;
+        font-size: 14px;
+    }
+
+    .btn-register {
+        display: inline-block;
+        padding: 10px 25px;
+        background: #28a745;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        text-decoration: none;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .btn-register:hover {
+        background: #218838;
+        transform: translateY(-2px);
+    }
+
+    .alert {
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+        border-left: 4px solid;
+        animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .alert-error {
+        background: #fee;
+        color: #c33;
+        border-color: #f99;
+    }
+
+    .alert-success {
+        background: #efe;
+        color: #3c3;
+        border-color: #9f9;
+    }
+
+    .help-text {
+        font-size: 12px;
+        color: #999;
+        margin-top: 5px;
+    }
+
+    .demo-credentials {
+        background: #e7f3ff;
+        border-left: 4px solid #007bff;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 20px 0;
+        font-size: 13px;
+        color: #333;
+    }
+
+    .demo-credentials h4 {
+        margin: 0 0 10px 0;
+        color: #007bff;
+    }
+
+    .demo-credentials code {
+        background: white;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: monospace;
+        color: #d63384;
+    }
+
+    .login-benefits {
+        background: #fff9e6;
+        border-left: 4px solid #ffc107;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 20px 0;
+        font-size: 13px;
+    }
+
+    .login-benefits h4 {
+        margin: 0 0 10px 0;
+        color: #ff9800;
+    }
+
+    .login-benefits ul {
+        margin: 0;
+        padding-left: 20px;
+        color: #666;
+    }
+
+    .login-benefits li {
+        margin-bottom: 5px;
+    }
+</style>
+
+<div class="login-container">
+    <div class="login-card">
+        <!-- Header -->
+        <div class="login-header">
+            <div class="hospital-badge">🏥 {{ HOSPITAL_NAME }}</div>
+            <h1>Welcome Back</h1>
+            <p>Sign in to access your healthcare dashboard</p>
+        </div>
+
+        <!-- Alert Messages -->
+        {% if message %}
+            {% if "Invalid" in message %}
+                <div class="alert alert-error">
+                    <strong>⚠️ Login Failed</strong><br>
+                    {{ message }}
+                </div>
+            {% elif "registered successfully" in message %}
+                <div class="alert alert-success">
+                    <strong>✓ Success!</strong><br>
+                    {{ message }}. You can now login.
+                </div>
+            {% else %}
+                <div class="alert alert-error">
+                    {{ message }}
+                </div>
+            {% endif %}
+        {% endif %}
+
+        <!-- Login Form -->
+        {% if "Welcome back" not in message %}
+            <form action="/login" method="post" id="loginForm">
+                <!-- Username Field -->
+                <div class="form-group">
+                    <label for="username">
+                        👤 Username
+                    </label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        placeholder="Enter your username"
+                        required 
+                        autocomplete="username"
+                    >
+                    <div class="help-text">Your registered username or email</div>
+                </div>
+
+                <!-- Password Field -->
+                <div class="form-group">
+                    <label for="password">
+                        🔐 Password
+                    </label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        placeholder="Enter your password"
+                        required 
+                        autocomplete="current-password"
+                    >
+                    <div class="help-text">Your secure password</div>
+                </div>
+
+                <!-- Remember Me & Forgot Password -->
+                <div class="form-actions">
+                    <label class="remember-me">
+                        <input type="checkbox" name="remember" id="remember">
+                        Remember me
+                    </label>
+                    <a href="#" class="forgot-password">Forgot password?</a>
+                </div>
+
+                <!-- Login Button -->
+                <button type="submit" class="btn-login">
+                    Sign In
+                </button>
+            </form>
+
+            <!-- Divider -->
+            <div class="divider">
+                <span>New to {{ HOSPITAL_NAME }}?</span>
+            </div>
+
+            <!-- Demo Credentials -->
+            <div class="demo-credentials">
+                <h4>Demo Credentials (for testing)</h4>
+                <p>
+                    <strong>Doctor:</strong> <code>doctor</code> / <code>password</code><br>
+                    <strong>Patient:</strong> <code>patient</code> / <code>password</code>
+                </p>
+            </div>
+
+            <!-- Login Benefits -->
+            <div class="login-benefits">
+                <h4>After Login You Can:</h4>
+                <ul>
+                    <li>📋 Access and manage your patient records</li>
+                    <li>🏥 View your appointments and treatment plans</li>
+                    <li>👨‍⚕️ Communicate with your doctor (for patients)</li>
+                    <li>📊 Manage patient data (for doctors)</li>
+                    <li>🔔 Receive important healthcare updates</li>
+                </ul>
+            </div>
+
+            <!-- Register Section -->
+            <div class="register-section">
+                <p>Don't have an account?</p>
+                <a href="{{ url_for('register') }}" class="btn-register">
+                    Create Account
+                </a>
+                <p style="margin-top: 10px; font-size: 12px;">
+                    Or <a href="{{ url_for('home') }}" style="color: #007bff; text-decoration: none;">return to home</a>
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
 {% endblock %}

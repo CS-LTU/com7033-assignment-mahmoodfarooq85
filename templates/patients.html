@@ -2,161 +2,509 @@
 {% block title %}Patients{% endblock %}
 
 {% block content %}
-<h1>Patients</h1>
 
+<style>
+    .patients-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .patients-header h1 {
+        margin: 0;
+        font-size: 36px;
+    }
+
+    .patients-header p {
+        margin: 10px 0 0 0;
+        opacity: 0.95;
+        font-size: 14px;
+    }
+
+    .section-container {
+        background: white;
+        border-radius: 8px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .section-title {
+        font-size: 24px;
+        color: #007bff;
+        margin: 0 0 20px 0;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .alert-message {
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+        border-left: 4px solid;
+        animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .alert-success {
+        background: #efe;
+        color: #3c3;
+        border-color: #9f9;
+    }
+
+    .alert-error {
+        background: #fee;
+        color: #c33;
+        border-color: #f99;
+    }
+
+    /* Add Patient Form */
+    .add-patient-form {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        margin-bottom: 8px;
+        color: #333;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .form-group input,
+    .form-group select {
+        padding: 10px 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 4px;
+        font-size: 14px;
+        transition: all 0.3s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background: #007bff;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #0056b3;
+        transform: translateY(-2px);
+    }
+
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #218838;
+    }
+
+    .btn-warning {
+        background: #ffc107;
+        color: #333;
+    }
+
+    .btn-warning:hover {
+        background: #e0a800;
+    }
+
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: #c82333;
+    }
+
+    .btn-small {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
+    /* Tables */
+    .table-responsive {
+        overflow-x: auto;
+        border-radius: 4px;
+        border: 1px solid #e0e0e0;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 15px;
+    }
+
+    thead {
+        background: #f8f9fa;
+    }
+
+    th {
+        padding: 12px 15px;
+        text-align: left;
+        font-weight: 600;
+        color: #333;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    tbody tr {
+        transition: background 0.3s;
+    }
+
+    tbody tr:hover {
+        background: #f9f9f9;
+    }
+
+    .row-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .table-edit-form {
+        display: contents;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+    }
+
+    .empty-state-icon {
+        font-size: 48px;
+        margin-bottom: 15px;
+    }
+
+    /* Pagination */
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 0;
+        border-top: 1px solid #e0e0e0;
+        margin-top: 20px;
+    }
+
+    .pagination-info {
+        color: #666;
+        font-size: 14px;
+    }
+
+    .pagination-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .pagination-controls a,
+    .pagination-controls span {
+        padding: 8px 12px;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        color: #007bff;
+        text-decoration: none;
+        transition: all 0.3s;
+    }
+
+    .pagination-controls a:hover {
+        background: #f0f0f0;
+        border-color: #007bff;
+    }
+
+    .pagination-controls span {
+        color: #999;
+    }
+
+    /* Stats */
+    .stats-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px;
+        border-radius: 4px;
+        text-align: center;
+    }
+
+    .stat-card h3 {
+        margin: 0 0 5px 0;
+        font-size: 24px;
+    }
+
+    .stat-card p {
+        margin: 0;
+        font-size: 12px;
+        opacity: 0.9;
+    }
+
+    .stat-card:nth-child(2) {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .stat-card:nth-child(3) {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    /* CSV Table specific */
+    .csv-table-wrapper {
+        max-width: 100%;
+        overflow-x: auto;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+
+    .csv-table-wrapper table {
+        margin: 0;
+    }
+
+    .csv-table-wrapper th {
+        background: #f8f9fa;
+        font-size: 12px;
+    }
+
+    .csv-table-wrapper td {
+        font-size: 12px;
+        padding: 8px 10px;
+    }
+
+    .csv-table-wrapper input {
+        width: 80px;
+        padding: 4px 6px;
+        font-size: 11px;
+    }
+
+    .csv-readonly {
+        background: #f6f6f6;
+        cursor: not-allowed;
+    }
+</style>
+
+<!-- Header -->
+<div class="patients-header">
+    <h1>👥 Patient Management</h1>
+    <p>Manage and track patient information and medical records</p>
+</div>
+
+<!-- Alert Messages -->
 {% if message %}
-  <p style="color:#2e7d32; font-weight:600;">{{ message }}</p>
-{% endif %}
-
-<!-- =========================
-     Add Patient (SQLite DB)
-     ========================= -->
-<h3>Add Patient</h3>
-<form method="post" action="{{ url_for('patients') }}" style="margin-bottom:1rem;">
-  <label>Name:</label>
-  <input name="name" required>
-
-  <label style="margin-left:1rem;">Age:</label>
-  <input name="age" required style="width:6rem;">
-
-  <label style="margin-left:1rem;">Condition:</label>
-  <input name="condition" required style="width:16rem;">
-
-  <button type="submit" style="margin-left:1rem;">Add Patient</button>
-</form>
-
-<!-- =========================
-     Existing Patients (SQLite)
-     ========================= -->
-<h3>Existing Patients (DB)</h3>
-<table border="1" cellpadding="6" cellspacing="0"
-       style="border-collapse:collapse; width:100%; margin-bottom:1.5rem;">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Name</th>
-      <th>Age</th>
-      <th>Condition</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% if patients %}
-      {% for p in patients %}
-        <tr>
-          <form method="post" action="{{ url_for('update_patient') }}">
-            <td>
-              <input name="id" value="{{ p[0] }}" readonly
-                     style="width:4rem; background:#f6f6f6;">
-            </td>
-            <td><input name="name" value="{{ p[1] }}" required></td>
-            <td><input name="age" value="{{ p[2] }}" required style="width:5rem;"></td>
-            <td><input name="condition" value="{{ p[3] }}" required></td>
-            <td>
-              <button type="submit">Update</button>
-              <button type="submit"
-                      formaction="{{ url_for('delete_patient') }}"
-                      onclick="return confirm('Delete patient ID {{ p[0] }}?');">
-                Delete
-              </button>
-            </td>
-          </form>
-        </tr>
-      {% endfor %}
+    {% if "added" in message or "updated" in message or "registered" in message or "successfully" in message %}
+        <div class="alert-message alert-success">
+            ✓ {{ message }}
+        </div>
     {% else %}
-      <tr>
-        <td colspan="5" style="text-align:center; color:#666;">
-          No patients found.
-        </td>
-      </tr>
+        <div class="alert-message alert-error">
+            ⚠️ {{ message }}
+        </div>
     {% endif %}
-  </tbody>
-</table>
-
-<!-- =========================
-     Stroke CSV (UPDATE / DELETE)
-     ========================= -->
-<h3>Stroke Data (from stroke_data.csv)</h3>
-
-{% set cols = [
-  'id','gender','age','hypertension','heart_disease','ever_married',
-  'work_type','Residence_type','avg_glucose_level','bmi','smoking_status','stroke'
-] %}
-
-{% if csv_rows %}
-  <div style="max-width:100%; overflow:auto; border:1px solid #ddd; padding:.5rem;">
-    <table border="1" cellpadding="6" cellspacing="0"
-           style="border-collapse:collapse; width:100%;">
-      <thead>
-        <tr>
-          {% for c in cols %}
-            {% if c in csv_rows[0] %}
-              <th>{{ c }}</th>
-            {% endif %}
-          {% endfor %}
-          <th>Actions</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        {% for row in csv_rows %}
-          <tr>
-            <form method="post">
-              <input type="hidden" name="row_index" value="{{ row._idx }}">
-
-              {% for c in cols %}
-                {% if c in row %}
-                  <td>
-                    {% if c == 'id' %}
-                      <input name="{{ c }}" value="{{ row[c] }}"
-                             readonly style="width:90px; background:#f6f6f6;">
-                    {% else %}
-                      <input name="{{ c }}" value="{{ row[c] }}" style="width:90px;">
-                    {% endif %}
-                  </td>
-                {% endif %}
-              {% endfor %}
-
-              <td>
-                <button type="submit"
-                        formaction="{{ url_for('update_stroke_row') }}">
-                  Update
-                </button>
-                <button type="submit"
-                        formaction="{{ url_for('delete_stroke_row') }}"
-                        onclick="return confirm('Delete this CSV row?');">
-                  Delete
-                </button>
-              </td>
-            </form>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Pagination -->
-  <div style="margin-top:.75rem; display:flex; gap:.5rem; align-items:center;">
-    <span>Rows per page: {{ page_size }} | Total: {{ total_rows }}</span>
-
-    <div style="margin-left:auto;">
-      {% if page > 1 %}
-        <a href="{{ url_for('patients', page=page-1) }}">Prev</a>
-      {% else %}
-        <span style="color:#aaa;">Prev</span>
-      {% endif %}
-
-      <span style="padding:0 .5rem;">Page {{ page }} / {{ total_pages }}</span>
-
-      {% if page < total_pages %}
-        <a href="{{ url_for('patients', page=page+1) }}">Next</a>
-      {% else %}
-        <span style="color:#aaa;">Next</span>
-      {% endif %}
-    </div>
-  </div>
-{% else %}
-  <p style="color:#666;">No CSV rows found.</p>
 {% endif %}
+
+<!-- Add Patient Section -->
+<div class="section-container">
+    <h2 class="section-title">➕ Add New Patient</h2>
+    <form method="post" action="{{ url_for('patients') }}">
+        <div class="add-patient-form">
+            <div class="form-group">
+                <label for="name">👤 Patient Name</label>
+                <input type="text" id="name" name="name" placeholder="Enter patient name" required>
+            </div>
+            <div class="form-group">
+                <label for="age">🎂 Age</label>
+                <input type="number" id="age" name="age" placeholder="Age in years" required>
+            </div>
+            <div class="form-group">
+                <label for="condition">🏥 Medical Condition</label>
+                <input type="text" id="condition" name="condition" placeholder="e.g., Hypertension, Diabetes" required>
+            </div>
+            <div class="form-group" style="justify-content: flex-end;">
+                <button type="submit" class="btn btn-success">✓ Add Patient</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Existing Patients Section -->
+<div class="section-container">
+    <h2 class="section-title">📋 Existing Patients</h2>
+    
+    {% if patients %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Age</th>
+                    <th>Condition</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in patients %}
+                    <tr>
+                        <form method="post" action="{{ url_for('update_patient') }}" class="table-edit-form">
+                            <td><input type="text" name="id" value="{{ p[0] }}" readonly class="csv-readonly" style="width: 50px;"></td>
+                            <td><input type="text" name="name" value="{{ p[1] }}" required></td>
+                            <td><input type="number" name="age" value="{{ p[2] }}" required style="width: 60px;"></td>
+                            <td><input type="text" name="condition" value="{{ p[3] }}" required></td>
+                            <td>
+                                <div class="row-actions">
+                                    <button type="submit" class="btn btn-primary btn-small">Update</button>
+                                    <button type="submit" class="btn btn-danger btn-small" formaction="{{ url_for('delete_patient') }}" 
+                                            onclick="return confirm('Delete patient ID {{ p[0] }}?');">Delete</button>
+                                </div>
+                            </td>
+                        </form>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <p>No patients found yet. Add a patient to get started!</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- CSV Data Section -->
+<div class="section-container">
+    <h2 class="section-title">📊 Stroke Data Records (CSV)</h2>
+    
+    {% set cols = [
+      'id','gender','age','hypertension','heart_disease','ever_married',
+      'work_type','Residence_type','avg_glucose_level','bmi','smoking_status','stroke'
+    ] %}
+
+    {% if csv_rows %}
+        <div class="csv-table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        {% for c in cols %}
+                            {% if c in csv_rows[0] %}
+                                <th>{{ c }}</th>
+                            {% endif %}
+                        {% endfor %}
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in csv_rows %}
+                        <tr>
+                            <form method="post">
+                                <input type="hidden" name="row_index" value="{{ row._idx }}">
+
+                                {% for c in cols %}
+                                    {% if c in row %}
+                                        <td>
+                                            {% if c == 'id' %}
+                                                <input type="text" name="{{ c }}" value="{{ row[c] }}" readonly class="csv-readonly">
+                                            {% else %}
+                                                <input type="text" name="{{ c }}" value="{{ row[c] }}">
+                                            {% endif %}
+                                        </td>
+                                    {% endif %}
+                                {% endfor %}
+
+                                <td>
+                                    <div class="row-actions">
+                                        <button type="submit" class="btn btn-primary btn-small" formaction="{{ url_for('update_stroke_row') }}">Update</button>
+                                        <button type="submit" class="btn btn-danger btn-small" formaction="{{ url_for('delete_stroke_row') }}"
+                                                onclick="return confirm('Delete this CSV row?');">Delete</button>
+                                    </div>
+                                </td>
+                            </form>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination-container">
+            <div class="pagination-info">
+                📄 <strong>{{ total_rows }}</strong> total records | Page <strong>{{ page }} / {{ total_pages }}</strong> | <strong>{{ page_size }}</strong> per page
+            </div>
+            <div class="pagination-controls">
+                {% if page > 1 %}
+                    <a href="{{ url_for('patients', page=1) }}">« First</a>
+                    <a href="{{ url_for('patients', page=page-1) }}">‹ Previous</a>
+                {% else %}
+                    <span>« First</span>
+                    <span>‹ Previous</span>
+                {% endif %}
+
+                <span style="color: #333; border: none; padding: 8px 4px;">{{ page }} / {{ total_pages }}</span>
+
+                {% if page < total_pages %}
+                    <a href="{{ url_for('patients', page=page+1) }}">Next ›</a>
+                    <a href="{{ url_for('patients', page=total_pages) }}">Last »</a>
+                {% else %}
+                    <span>Next ›</span>
+                    <span>Last »</span>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <p>No CSV records found. Make sure the stroke_data.csv file is in the project folder.</p>
+        </div>
+    {% endif %}
+</div>
 
 {% endblock %}

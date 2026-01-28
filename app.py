@@ -3,7 +3,7 @@ import os
 import sqlite3
 import logging
 from math import ceil
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import wraps
 
 from flask import (
@@ -143,7 +143,7 @@ def register():
                             "username": username,
                             "password_hash": pwd_hash,
                             "role": role,
-                            "created_at": datetime.utcnow(),
+                            "created_at": datetime.now(timezone.utc),
                         }
                     )
                 except Exception as e:
@@ -185,6 +185,10 @@ def login():
                 return redirect(url_for("doctor_dashboard"))
             elif role == "patient":
                 return redirect(url_for("patient_dashboard"))
+            elif role == "staff":
+                return redirect(url_for("staff_dashboard"))
+            elif role == "admin":
+                return redirect(url_for("admin_dashboard"))
             else:
                 return redirect(url_for("home"))
 
@@ -203,13 +207,36 @@ def logout():
 @app.route("/doctor_dashboard")
 @login_required(role="doctor")
 def doctor_dashboard():
-    return render_template("doctor_dashboard.html")
+    # Get patient statistics
+    with sqlite3.connect(DB_NAME) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM patients")
+        total_patients = cur.fetchone()[0]
+        
+        cur.execute("SELECT id, name, age, condition FROM patients ORDER BY id DESC LIMIT 10")
+        recent_patients = cur.fetchall()
+    
+    return render_template("doctor_dashboard.html", 
+                         total_patients=total_patients,
+                         recent_patients=recent_patients)
 
 
 @app.route("/patient_dashboard")
 @login_required(role="patient")
 def patient_dashboard():
     return render_template("patient_dashboard.html")
+
+
+@app.route("/staff_dashboard")
+@login_required(role="staff")
+def staff_dashboard():
+    return render_template("staff_dashboard.html")
+
+
+@app.route("/admin_dashboard")
+@login_required(role="admin")
+def admin_dashboard():
+    return render_template("admin_dashboard.html")
 
 
 # ---------- Patients CRUD + CSV ----------
@@ -256,7 +283,7 @@ def patients():
                                 "name": name,
                                 "age": age,
                                 "condition": cond,
-                                "created_at": datetime.utcnow(),
+                                "created_at": datetime.now(timezone.utc),
                                 "added_by": session.get("username"),
                                 "source": "web_form",
                             }
