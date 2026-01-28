@@ -44,7 +44,7 @@ app.log, cache files.
 These helps alot in support of security.
 
 
-  It has Unit Testing also.
+
 
 I write some tests using pytest to check that:
 
